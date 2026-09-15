@@ -1,11 +1,14 @@
 % main.tex - Thesis root document
-\documentclass[12pt]{report}
-\documentclass[12pt,a4paper]{report}
-\usepackage{graphicx}
-\usepackage{amsmath,amssymb,amsfonts}
-\usepackage{booktabs} % For professional tables
-\usepackage{subcaption}
-\usepackage{hyperref}
+\documentclass[
+  author={Praveen Kumar Vijaya Kumar},
+  supervisor={Dr. Zahraa Abdallah},
+  degree={MSc},
+  title={Dimensionality Reduction for Multivariate Time Series},
+  subtitle={Evaluating Unsupervised PCA and Supervised Filtering Paradigms},
+  year={2026}
+]{dissertation}
+
+% Packages
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[english]{babel}
@@ -13,24 +16,38 @@
 \geometry{margin=1in}
 \usepackage{graphicx}
 \graphicspath{{figures/}}
-\usepackage{amsmath,amssymb}
-\usepackage{booktabs}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs} % For professional tables
+\usepackage{subcaption}
 \usepackage{hyperref}
 \usepackage{natbib}
 
 \begin{document}
-\title{Dimensionality Reduction}
-\author{Author Name}
-\date{\today}
+
+% Frontmatter: Roman page numbering
+\frontmatter
+
 \maketitle
-\begin{abstract}
-A short abstract describing the thesis scope and contributions.
-\end{abstract}
+\makedecl
+
+\chapter*{Abstract}
+This thesis investigates dimensionality reduction strategies for multivariate time series (MTS) across varied domain topologies, including motion capture sensor arrays and high-density electroencephalography (EEG). By framing sensor pruning through both unsupervised principal component representation learning and supervised temporal statistical filtering, this work evaluates information retention using non-parametric Monte Carlo permutation testing. The findings demonstrate that PCA-based loading selection and subspace divergence successfully isolate task-discriminative cortical regions while pruning redundant hardware channels.
+
+\chapter*{Supporting Technologies}
+\begin{itemize}
+    \item I used Python libraries including \texttt{aeon}, \texttt{scikit-learn}, \texttt{NumPy}, and \texttt{pandas} for time series processing and machine learning models.
+    \item I used MNE-Python for stereographic scalp topomap coordinate projections of EEG sensor montages.
+    \item I used Git and GitHub for version control, issue tracking, and collaborative project structure.
+    \item I used \LaTeX{} via Visual Studio Code and Overleaf for document composition and typesetting.
+\end{itemize}
+
 \tableofcontents
 \listoffigures
 \listoftables
 
-% Chapters
+% Mainmatter: Arabic page numbering and running headers
+\mainmatter
+
 \include{chapters/ch1_introduction}
 \include{chapters/ch2_lit_review}
 \include{chapters/ch3_methodology}
@@ -39,6 +56,11 @@ A short abstract describing the thesis scope and contributions.
 \include{chapters/ch6_discussion}
 \include{chapters/ch7_conclusion}
 
-\bibliographystyle{plain}
+% Backmatter: Bibliography and appendices
+\backmatter
 \bibliography{bibliography}
+
+\appendix
+\include{chapters/appendix_a}
+
 \end{document}

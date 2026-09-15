@@ -1,29 +1,27 @@
 \chapter{Methodology}
-\label{ch:methods}
+\label{ch:methodology}
 
-This chapter details the methods used in this thesis. It includes data preprocessing, the selected dimensionality reduction algorithms, and implementation notes.
+This chapter formalizes the mathematical framework for dimensionality reduction in multivariate time series (MTS), explicitly distinguishing between unsupervised principal component representation and supervised statistical filtering.
 
-\section{Overview}
-Provide a high-level description of the experimental pipeline (preprocessing \rightarrow transform \rightarrow evaluation).
+\section{Problem Formulation and Notation}
+Let a multivariate time series dataset be represented as a 3D tensor $\mathbf{X} \in \mathbb{R}^{N \times C \times T}$, where $N$ denotes the number of training instances, $C$ represents the total number of sensor channels, and $T$ is the number of timepoints per instance. Each sample is associated with a class label vector $\mathbf{y} \in \{1, \dots, K\}^N$.
 
-\section{Data Preprocessing}
-Describe normalization, missing-value handling, and any feature selection steps.
+\section{Unsupervised PCA-Based Channel Selection}
+To perform dimensionality reduction while retaining physical sensor interpretability, spatial PCA is computed across the multichannel array. 
+\begin{itemize}
+    \item \textbf{Dynamic Scree-Elbow Derivation ($k^*$):} Rather than fixing arbitrary retention ratios, the optimal subset size $k^*$ is derived automatically using the Kneedle/Elbow curvature algorithm on the normalized eigenvalue spectrum $(\lambda_1, \dots, \lambda_C)$.
+    \item \textbf{Orthogonal Extremal Selection (\texttt{PCA\_Max_Loading}):} For the top $k$ principal components, the physical channel $c$ that maximizes the absolute projection weight is selected:
+    \begin{equation}
+        c_m^* = \arg\max_c |v_{c, m}| \quad \text{for } m \in \{1, \dots, k\}
+    \end{equation}
+\end{itemize}
 
-\section{Dimensionality Reduction Methods}
-\subsection{Principal Component Analysis (PCA)}
-PCA seeks orthogonal directions of maximum variance. Given centered data matrix $X\in\mathbb{R}^{n\times d}$, PCA solves the eigenproblem:
-$$X^TX v = \lambda v,$$
-where $v$ are principal directions.
+\section{Supervised Subspace PCA and Temporal Filtering}
+To address high-density topologies where background global variance overshadows localized class signals, two supervised paradigms are formalized:
+\begin{enumerate}
+    \item \textbf{Supervised Subspace PCA (Class-Conditional Manifolds):} Independent PCA manifolds are fitted per class ($\mathbf{\Sigma}^{(0)}$ vs. $\mathbf{\Sigma}^{(1)}$), ranking channels by the principal subspace rotation divergence $|\mathbf{V}^{(0)} - \mathbf{V}^{(1)}|$.
+    \item \textbf{Supervised Temporal ANOVA Filter:} Computes pointwise one-way ANOVA $F$-statistics across classes at each timepoint $t$, isolating channels with high between-class variance relative to within-class noise.
+\end{enumerate}
 
-\subsection{Manifold Methods}
-Short notes on t-SNE and UMAP and hyperparameter choices.
-
-\subsection{Representation Learning}
-Autoencoders and other neural approaches; architecture notes and training setup.
-
-\subsection{Time-Series Specific Methods}
-Discuss MiniROCKET and any use of the `aeon` library for preprocessing/time-series pipelines.
-
-\section{Implementation Details}
-- Software: list Python, scikit-learn, PyTorch (if used), `aeon` and other libs.
-- Reproducibility: seeds, hardware, and runtimes.
+\section{Statistical Validation via Monte Carlo Permutation Testing}
+To prove that dimensionality reduction yields information retention beyond random spatial chance, a non-parametric Monte Carlo permutation test ($R = 30$ runs) generates an empirical null distribution via uniform random channel draws of size $k$. Significance is evaluated via pseudo-count corrected empirical $p$-values and Cohen's $d$ effect sizes.

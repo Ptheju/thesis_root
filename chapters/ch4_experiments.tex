@@ -1,35 +1,25 @@
-\chapter{Experiments}
+\chapter{Experimental Design and Evaluation Protocol}
 \label{ch:experiments}
 
-This chapter describes the experimental setup and protocols used to evaluate dimensionality reduction methods.
+This chapter details the empirical evaluation harness, hyperparameter grids, and rigorous data hygiene protocols implemented to prevent data leakage.
 
-\section{Experimental Setup}
-List datasets, splits, and hardware. Describe how transforms are applied and downstream tasks (visualization, classification, clustering).
+\section{Benchmark Topologies}
+The evaluation framework spans three standard multivariate time series domains from the UEA/UCR repository:
+\begin{itemize}
+    \item \textbf{BasicMotions ($C = 6$):} Low-dimensional motion classification.
+    \item \textbf{FingerMovements ($C = 28$):} Sensorimotor EEG rhythms ($\mu/\beta$ band).
+    \item \textbf{FaceDetection ($C = 144$):} High-density visual ERP cognitive trials.
+\end{itemize}
 
-\section{Datasets}
-Describe each dataset (size, dimensionality) used in experiments.
+\section{Downstream Classification Engine}
+Following standard time series classification protocols, \texttt{MiniRocket} combined with \texttt{RidgeClassifierCV} serves as the primary feature transformation and classification engine, ensuring computational scalability across thousands of ablation iterations.
 
-\section{Evaluation Metrics}
-- Reconstruction error (when applicable)
-- Classification accuracy using transformed features
-- Clustering quality (ARI/NMI)
-- Run-time and memory usage
+\section{Data Hygiene and Prevention of Leakage}
+To ensure methodological validity, strict separation of data splits is enforced:
+\begin{itemize}
+    \item All channel scoring mechanisms (PCA loadings, subspace divergence matrices, and ANOVA $F$-scores) are computed \textbf{strictly and exclusively on the training partition} ($\mathbf{X}_{\text{train}}, \mathbf{y}_{\text{train}}$).
+    \item The test partition ($\mathbf{X}_{\text{test}}, \mathbf{y}_{\text{test}}$) remains completely unseen during the channel selection phase.
+\end{itemize}
 
-\section{Procedure}
-For each dataset and method:
-\begin{enumerate}
-\item Apply preprocessing
-\item Fit dimensionality reduction to training data
-\item Transform train/test and evaluate downstream task
-\end{enumerate}
-
-\section{Figures and Tables}
-Example figure placeholder:
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.8\linewidth]{example_plot.png}
-  \caption{Example placeholder plot (replace with 300 DPI PNG/PDF).}
-  \label{fig:example}
-\end{figure}
-
-Include tables for hyperparameters and results per dataset.
+\section{Parametric Sensitivity and Balanced Results Reporting}
+To avoid post-hoc reporting bias, results are presented across a multi-tier grid of candidate values for $k$, rather than highlighting isolated single points.
