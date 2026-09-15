@@ -1,0 +1,44 @@
+% main.tex - Thesis root document
+\documentclass[12pt]{report}
+\documentclass[12pt,a4paper]{report}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs} % For professional tables
+\usepackage{subcaption}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+
+\begin{document}
+\title{Dimensionality Reduction}
+\author{Author Name}
+\date{\today}
+\maketitle
+\begin{abstract}
+A short abstract describing the thesis scope and contributions.
+\end{abstract}
+\tableofcontents
+\listoffigures
+\listoftables
+
+% Chapters
+\include{chapters/ch1_introduction}
+\include{chapters/ch2_lit_review}
+\include{chapters/ch3_methodology}
+\include{chapters/ch4_experiments}
+\include{chapters/ch5_results}
+\include{chapters/ch6_discussion}
+\include{chapters/ch7_conclusion}
+
+\bibliographystyle{plain}
+\bibliography{bibliography}
+\end{document}

@@ -1,0 +1,29 @@
+\chapter{Methodology}
+\label{ch:methods}
+
+This chapter details the methods used in this thesis. It includes data preprocessing, the selected dimensionality reduction algorithms, and implementation notes.
+
+\section{Overview}
+Provide a high-level description of the experimental pipeline (preprocessing \rightarrow transform \rightarrow evaluation).
+
+\section{Data Preprocessing}
+Describe normalization, missing-value handling, and any feature selection steps.
+
+\section{Dimensionality Reduction Methods}
+\subsection{Principal Component Analysis (PCA)}
+PCA seeks orthogonal directions of maximum variance. Given centered data matrix $X\in\mathbb{R}^{n\times d}$, PCA solves the eigenproblem:
+$$X^TX v = \lambda v,$$
+where $v$ are principal directions.
+
+\subsection{Manifold Methods}
+Short notes on t-SNE and UMAP and hyperparameter choices.
+
+\subsection{Representation Learning}
+Autoencoders and other neural approaches; architecture notes and training setup.
+
+\subsection{Time-Series Specific Methods}
+Discuss MiniROCKET and any use of the `aeon` library for preprocessing/time-series pipelines.
+
+\section{Implementation Details}
+- Software: list Python, scikit-learn, PyTorch (if used), `aeon` and other libs.
+- Reproducibility: seeds, hardware, and runtimes.
