@@ -113,7 +113,9 @@ Physical topology affects how channel redundancy should be interpreted. Adjacent
             % Logical coordinate grid for FingerMovements (C=28)
             \draw[thick, fill=green!10] (0,0) circle (1.5cm);
             \foreach \i in {1, ..., 8} {
-                \pgfmathsetplotpointxy{\i*45}{0.8cm}
+                \foreach \i in {1, ..., 8} {
+    \fill (\i*45:0.8cm) circle (1.5pt);
+}
                 \fill (\i*45:0.8cm) circle (1.5pt);
             }
             \foreach \i in {1, ..., 12} {

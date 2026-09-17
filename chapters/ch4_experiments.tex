@@ -32,18 +32,18 @@ A primary methodological risk in automated channel selection is inadvertent data
     \begin{equation}
         \mathbf{X}_{\text{train}}^{*} = \mathbf{X}_{\text{train}}[:, \mathcal{S}^^*, :], \quad \mathbf{X}_{\text{test}}^{*} = \mathbf{X}_{\text{test}}[:, \mathcal{S}^^*, :]
     \end{equation}
-    \item \textbf{Robust Preprocessing:} To mitigate outlier distortion, feature values undergo robust min-max scaling utilizing the \textbf{98th percentile} to establish scaling bounds prior to tensor reshaping and zero-mean column-wise centering.
+    \item \textbf{Robust Preprocessing and Scaling:} To mitigate extreme outlier distortion across sensor channels, input values undergo robust min-max scaling where scaling boundaries are determined exclusively via the \textbf{98th percentile} of the training distribution prior to tensor reshaping and zero-mean column-wise centering.
 \end{enumerate}
 
 \section{Feature Extraction and Classification Engine}
 \label{sec:classifier_engine}
 
 \noindent
-To isolate the impact of spatial channel reduction from classifier-specific artifacts, a standardized, high-performance downstream classification pipeline is maintained across all evaluations:
+To isolate the impact of spatial channel reduction from classifier-specific artifacts, a standardized, high-performance downstream classification pipeline is maintained across all evaluations utilizing established machine learning libraries (\texttt{aeon} version 0.4.x and \texttt{scikit-learn}):
 
 \begin{itemize}
-    \item \textbf{Feature Transformation (\texttt{MiniRocket}):} Rather than operating directly on raw multivariate tensors or handcrafted statistical descriptors, reduced tensors ($\mathbf{X}^* \in \mathbb{R}^{N \times k^* \times T}$) are processed via \texttt{MiniRocket}. This architecture applies thousands of randomly initialized convolutional kernels to efficiently capture temporal phase and shape characteristics, projecting MTS data into a scalable feature matrix.
-    \item \textbf{Classification Estimator (\texttt{RidgeClassifierCV}):} Downstream classification is executed using a ridge regression classifier with built-in cross-validation, automatically optimizing regularization parameters across logarithmic scales without manual hyperparameter tuning on the test set.
+    \item \textbf{Feature Transformation (\texttt{MiniRocket}):} Rather than operating directly on raw multivariate tensors or handcrafted statistical descriptors, reduced tensors ($\mathbf{X}^* \in \mathbb{R}^{N \times k^* \times T}$) are processed via \texttt{MiniRocket}. This architecture applies 10,000 randomly initialized convolutional kernels of length 9 to efficiently capture temporal phase and shape characteristics, projecting MTS data into a scalable feature matrix. A fixed random seed ($\texttt{random\_state} = 42$) is enforced across all transformer initializations.
+    \item \textbf{Classification Estimator (\texttt{RidgeClassifierCV}):} Downstream classification is executed using a ridge regression classifier with built-in generalized cross-validation, automatically optimizing regularization parameters across a logarithmic scale ($\alpha \in [10^{-3}, 10^3]$) without manual hyperparameter tuning on the test set.
 \end{itemize}
 
 \section{Nested Cross-Validatory Setup and Hyperparameter Grids}

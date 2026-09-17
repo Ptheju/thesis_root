@@ -7,7 +7,12 @@ The results document contains multiple experimental generations. Exploratory gri
 \section{Conventional feature-space PCA}
 In an exploratory EEG pipeline, 22 catch22 descriptors were extracted for each of 62 channels, producing 1,364 features. PCA required 929 components to retain 95.02\% cumulative variance, while downstream Random Forest accuracy was approximately 50.48\%. This combination indicates that high cumulative explained variance did not preserve useful discrimination in that experiment. It does not establish a universal limitation of PCA, because the result is conditional on the feature extraction, scaling, classifier and split.
 
-\placeholderfigure{Insert the cumulative explained-variance curve for the catch22 representation.}{Cumulative explained variance for the exploratory feature-space PCA baseline.}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.88\textwidth]{figures/Catch22_CV.png}
+  \caption{Cumulative explained variance for the exploratory feature-space PCA baseline.}
+  \label{fig:Cumulative_variance}
+\end{figure}
 
 \section{Primary nested-selection results}
 \Cref{tab:primary-results} reports the final supplied benchmark. Both selected representations remove 75\% of their channels. FingerMovements improves by three percentage points over the full-array baseline but only 1.06 points over the random-subset mean. FaceDetection improves by 1.25 points over the full-array baseline and 1.92 points over the random mean.
