@@ -1,4 +1,134 @@
 \chapter{Introduction}
-\label{ch:intro}
+\label{chap:introduction}
 
-Introduce the problem of high-dimensional data and motivation for dimensionality reduction. Outline thesis contributions and chapter structure.
+This chapter establishes the context and motivation for investigating dimensionality reduction in multivariate time series. It first explains why increasingly dense sensor arrays create both analytical opportunities and practical difficulties. The principal challenges addressed by this project are then introduced, including the preservation of temporal structure, the distinction between variance and discriminative information, and the need to evaluate channel-selection methods without test-set leakage. Finally, the investigative focus, research questions, objectives and structure of the dissertation are presented.
+
+\section{Motivation}
+
+Multivariate time series are collected whenever several variables are observed repeatedly over time. Typical examples include electroencephalography (EEG), motion capture, industrial monitoring, wearable sensing, finance and environmental surveillance. A dataset of this kind can be represented as
+\begin{equation}
+    \mathcal{X}\in\mathbb{R}^{N\times C\times T},
+    \label{eq:mts-tensor-intro}
+\end{equation}
+where $N$ denotes the number of observations or trials, $C$ the number of channels, and $T$ the number of time points. Unlike an ordinary tabular dataset, this representation contains at least two forms of dependence: temporal dependence within each channel and cross-channel dependence among variables observed over the same interval.
+
+Advances in sensing technology have made it possible to record larger numbers of channels at higher sampling frequencies. Dense measurements can capture subtle spatial and temporal behaviour that would be unavailable from a smaller array. However, the resulting representation is not necessarily efficient. Neighbouring or functionally related sensors may contain strongly correlated information, while noisy channels can increase computational cost without improving prediction. The usefulness of additional channels therefore depends not only on the volume of information recorded, but also on whether that information is distinct and relevant to the downstream task.
+
+% Add foundational citations on multivariate time-series analysis and sensor redundancy.
+
+\subsection{The need for dimensionality reduction}
+
+High-dimensional multivariate time series create difficulties throughout the analytical pipeline. Storage and memory requirements increase with $NCT$, feature transformation becomes more expensive, and predictive models may become sensitive to redundant or noisy inputs. These issues are particularly important for high-density EEG and resource-constrained monitoring systems, where acquisition time, hardware complexity and computational latency can influence whether a method is practically deployable.
+
+Dimensionality reduction seeks a more compact representation of the observations. Conventional feature-extraction methods replace the original variables with a smaller set of latent variables,
+\begin{equation}
+    X \longrightarrow Z,
+\end{equation}
+where $Z$ preserves selected properties of $X$. Principal component analysis (PCA), for example, constructs orthogonal components that retain directions of high variance. This can be effective when the objective is compression or reconstruction, but the latent variables no longer correspond directly to physical sensors. For applications requiring interpretable sensor subsets or reduced acquisition hardware, retaining a subset of the original channels may be more useful than replacing them with combinations of all channels.
+
+This project therefore studies spatial channel reduction of the form
+\begin{equation}
+    \mathcal{X}_{N\times C\times T}
+    \longrightarrow
+    \mathcal{X}_{S,N\times k\times T},
+    \qquad S\subset\{1,\ldots,C\},\quad k<C,
+    \label{eq:channel-reduction-intro}
+\end{equation}
+where $S$ is the selected set of physical channels. The temporal sequence of every retained channel remains unchanged. This formulation allows the number of sensors to be reduced without flattening the temporal axis or replacing the original measurements with latent coordinates.
+
+\subsection{Applications of channel reduction}
+
+Channel reduction is relevant wherever redundant sensing increases operational cost. In EEG, fewer electrodes can reduce preparation time, memory requirements and the amount of data passed to a classifier. In wearable and embedded systems, smaller input arrays may reduce communication and energy demands. In industrial monitoring, identifying a compact set of informative sensors may simplify maintenance and facilitate deployment on constrained devices. Motion-recognition systems can similarly benefit when a reduced combination of accelerometer or gyroscope axes retains the information required for classification.
+
+These benefits cannot be assumed from dimensionality reduction alone. A smaller representation is useful only if it preserves information relevant to its intended application. Accordingly, this dissertation evaluates reduced channel sets through downstream time-series classification. The classifier is used as an evaluation instrument: it tests whether task-relevant temporal information remains after spatial reduction, rather than constituting the principal methodological contribution.
+
+% Add domain citations for EEG channel selection, wearable sensing and industrial monitoring.
+
+\section{Challenges}
+
+The main challenges encountered in this investigation arise from the structure of multivariate time-series data and from the design of a credible evaluation protocol. They are summarised below.
+
+\subsection{Preserving temporal structure}
+
+A common way to apply conventional dimensionality-reduction algorithms is to flatten a multichannel sequence into a long vector. Although convenient, flattening can obscure the distinction between a channel and a time point. Temporal ordering, phase relationships and local transient patterns may then be treated as ordinary independent features. This is problematic when class information is carried by the shape or timing of a response rather than by its global magnitude.
+
+An exploratory feature-space experiment in this project demonstrated this limitation. Channel-wise catch22 extraction produced 1,364 features, of which 929 PCA components were required to retain approximately 95\% cumulative variance. Despite preserving most of the measured variance, downstream classification remained close to chance. This result does not imply that PCA or feature extraction is universally unsuitable; it shows that variance retention in the tested representation did not guarantee retention of class-discriminative temporal information. The finding motivated a shift towards reducing the channel dimension while leaving the temporal sequences intact.
+
+\subsection{Variance is not equivalent to discriminative information}
+
+PCA is unsupervised and ranks directions according to variance rather than class separation. A channel can make a large contribution to the leading components because it contains strong background activity, artefacts or variation shared by both classes. Conversely, a low-variance channel may contain a subtle but consistent class-dependent signal. Explained variance is therefore informative about compression, but insufficient as the sole criterion for selecting channels for classification.
+
+This distinction motivates the comparison of several PCA-derived definitions of channel importance. Maximum loading identifies channels that dominate individual components; eigenvalue-weighted scores aggregate their contributions across components; loading norms measure participation in a leading subspace; and class-conditional subspace divergence uses labels to compare class-specific PCA structures. The first three approaches are unsupervised with respect to the class labels, whereas the class-conditional method is supervised. Treating all four as wholly unsupervised would obscure an important methodological difference.
+
+\subsection{Dataset heterogeneity}
+
+The effectiveness of dimensionality reduction can vary with the number of channels, sample size, temporal length, noise level and strength of cross-channel correlation. The three benchmarks used in this project represent different regimes. BasicMotions has only six channels and exhibits a classification ceiling. FingerMovements contains 28 EEG channels and substantial variation among random subsets. FaceDetection contains 144 dimensions and offers greater scope for spatial reduction, but also presents a more complex covariance structure.
+
+Consequently, a method that performs well on one dataset may not transfer directly to another. A ceiling-saturated dataset cannot distinguish between competing selectors, while a high-dimensional dataset may require a larger subset to preserve distributed information. Cross-dataset evaluation is therefore necessary both to identify useful patterns and to expose limitations.
+
+\subsection{Selection bias and data leakage}
+
+Evaluating many methods and values of $k$ on the held-out test set and then reporting the best result would produce an optimistically biased estimate. The test set would indirectly influence the selected configuration, even if it were never used to fit PCA or the classifier. This risk is especially important when the experimental grid contains several selection rules and sparsity levels.
+
+To address this problem, the final protocol selects the PCA method and channel count through five-fold inner cross-validation using the training partition only. Scaling, covariance estimation, PCA fitting, channel scoring and classifier training are repeated inside the validation procedure. The chosen configuration is then refitted on the available training data and evaluated once on the sequestered test set. This separation ensures that the final test result evaluates a predetermined pipeline rather than a configuration chosen retrospectively for favourable test performance.
+
+\subsection{Establishing whether selection is better than chance}
+
+Comparison with the full array can show whether performance is retained after reduction, but it does not show whether the selected channels are unusually informative. A method may match the full-array accuracy simply because many channel subsets perform similarly. For this reason, the selected representation is also compared with an empirical distribution generated from uniformly sampled random channel subsets of the same size.
+
+The random-subset analysis reports the selected-minus-null gain, a standardised effect size and a pseudo-count-corrected empirical $p$-value. These quantities are interpreted jointly. A positive accuracy difference or large standardised effect does not by itself establish statistical significance, and $p>0.05$ is not described as evidence that the null hypothesis has been rejected. This cautious interpretation is important because the final FaceDetection result is directionally favourable but remains above the conventional significance threshold, while the FingerMovements result provides much weaker evidence against random selection.
+
+\section{Investigative focus}
+
+The project investigates whether PCA can support dimensionality reduction without discarding the physical and temporal meaning of the original channels. Rather than treating PCA only as a transformation from observations to latent components, the PCA eigensystem is used to derive channel-importance scores. The resulting subsets are evaluated using MiniRocket and ridge classification, with model selection restricted to the training data and random channel selection serving as a cardinality-matched null reference.
+
+The investigation distinguishes two related questions. The first is whether a reduced subset can retain performance relative to the full array. The second is whether the PCA-derived subset performs better than random subsets of equal size. The first question concerns compression and sensor economy; the second concerns the informativeness of the selection rule. Keeping them separate prevents successful reduction from being overstated as proof of statistically superior channel identification.
+
+\subsection{Aim and objectives}
+
+The aim of this dissertation is:
+
+\begin{quote}
+\emph{To investigate whether PCA-based dimensionality reduction can reduce the spatial dimensionality of multivariate time-series data while retaining downstream classification performance.}
+\end{quote}
+
+To achieve this aim, the following objectives are defined:
+
+\begin{enumerate}[leftmargin=*]
+    \item Establish full-channel and conventional feature-space PCA baselines for multivariate time-series classification.
+    \item Develop and compare alternative channel-selection criteria derived from PCA loadings, eigenvalues and class-conditional subspaces.
+    \item Preserve the original temporal sequences by reducing the physical channel dimension rather than flattening time into an undifferentiated feature vector.
+    \item Select the PCA method and channel count using training-only cross-validation, thereby preventing the held-out test set from influencing configuration selection.
+    \item Evaluate whether reduced subsets retain classification performance relative to the full channel arrays.
+    \item Compare PCA-derived subsets with uniformly sampled random subsets of equal cardinality.
+    \item Quantify the selected-null difference using empirical $p$-values, standardised effect sizes and accuracy gains.
+    \item Examine how dimensionality, signal characteristics and ceiling effects influence results across BasicMotions, FingerMovements and FaceDetection.
+    \item Assess the computational implications of reducing the number of channels, while separating synthetic profiling evidence from general deployment claims.
+\end{enumerate}
+
+\subsection{Research questions}
+
+The investigation is guided by four research questions:
+
+\begin{description}[leftmargin=13mm,style=nextline]
+    \item[RQ1] Can PCA-based channel selection reduce the number of channels in multivariate time series while retaining downstream classification performance?
+    \item[RQ2] How do alternative PCA-derived definitions of channel importance affect the selected representation and its predictive performance?
+    \item[RQ3] Do PCA-derived channel subsets demonstrate evidence of improved performance relative to randomly selected subsets of equal size?
+    \item[RQ4] How consistent are the effects of PCA-based channel selection across datasets with different dimensionality and signal characteristics?
+\end{description}
+
+\subsection{Contributions}
+
+The principal contributions of the dissertation are:
+
+\begin{enumerate}[leftmargin=*]
+    \item a systematic comparison of several PCA-derived channel-selection criteria for multivariate time series;
+    \item a clear distinction between latent feature-space PCA, unsupervised loading-based channel selection and supervised class-conditional subspace selection;
+    \item a leakage-resistant evaluation protocol that separates configuration selection from final held-out testing;
+    \item an empirical comparison with cardinality-matched random channel subsets rather than reliance on the full-array baseline alone; and
+    \item a critical analysis of dataset dependence, ceiling effects, negative results and uncertainty, alongside the observed potential for substantial channel reduction.
+\end{enumerate}
+
+\section{Structure of the dissertation}
+
+The remainder of the dissertation is organised as follows. \Cref{chap:background} introduces multivariate time-series representations, dimensionality reduction, PCA theory, channel selection and the statistical principles required for evaluation. It also reviews related work and presents exploratory analysis of the benchmark datasets. \Cref{chap:methodology} describes preprocessing, the PCA-derived selection criteria, candidate dimensionalities, nested cross-validation, MiniRocket classification, the empirical random-subset procedure and evaluation metrics. \Cref{chap:results} presents the conventional PCA baseline, primary held-out results, null distributions, exploratory sensitivity grids, computational profiling and error analysis. Finally, \Cref{chap:conclusion} answers the research questions, summarises the contributions and discusses limitations and directions for future work.

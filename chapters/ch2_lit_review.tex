@@ -1,4 +1,151 @@
-\chapter{Literature Review}
-\label{ch:lit}
+\chapter{Background and Related Work}
+\label{chap:background}
 
-Survey classical and modern dimensionality reduction methods: PCA, MDS, t-SNE, UMAP, autoencoders, and recent time-series specific transforms like MiniROCKET. Discuss evaluation metrics and common datasets.
+\section{Multivariate time-series representations}
+An observation $X_i\in\mathbb{R}^{C\times T}$ contains temporal dependence within each channel and cross-channel dependence at each time point. Dimensionality reduction can target time points, engineered features, latent components or physical channels. These targets are not interchangeable. Flattening $X_i$ into a vector can make standard tabular methods convenient, but it may obscure the distinction between temporal and spatial structure.
+
+\section{Feature extraction and channel selection}
+Feature extraction maps observations to new variables, for example by transforming raw sequences into statistical descriptors or latent components. Channel selection instead retains an interpretable subset of the original sensors. The latter preserves the time axis and may reduce acquisition requirements, although it cannot combine weak signals spread across omitted channels.
+
+An early project stream extracted 22 catch22 descriptors per channel. For 62 channels this produced 1,364 features, of which 929 PCA components were required to retain 95.02\% cumulative variance. A Random Forest classifier achieved approximately 50.48\% accuracy. This exploratory result motivated the shift from global feature-space compression toward spatial channel selection. It should not be interpreted as proof that all feature-based PCA fails; it is evidence about the tested representation and pipeline.
+
+\section{Principal component analysis}
+For centred observations $X\in\mathbb{R}^{n\times C}$, the sample covariance matrix is
+\begin{equation}
+ \Sigma=\frac{1}{n-1}X^\top X.
+\end{equation}
+PCA solves
+\begin{equation}
+ \Sigma v_m=\lambda_m v_m,
+\end{equation}
+where eigenvectors $v_m$ are orthogonal directions and eigenvalues $\lambda_m$ quantify associated variance. The explained variance ratio and cumulative explained variance are
+\begin{align}
+ \operatorname{EVR}_m &= \frac{\lambda_m}{\sum_{j=1}^{C}\lambda_j},\\
+ \operatorname{CEV}_k &= \frac{\sum_{m=1}^{k}\lambda_m}{\sum_{j=1}^{C}\lambda_j}.
+\end{align}
+Conventional PCA produces latent scores $Z=XV_k$. In contrast, the methods evaluated here use $V_k$ to score original channels.
+
+\section{Variance preservation and class information}
+PCA is unsupervised: it has no knowledge of the response variable unless labels are deliberately incorporated into the construction. High-variance directions may describe nuisance variation rather than class separation. Consequently, reconstruction quality and cumulative variance are not sufficient evaluation criteria when the downstream task is classification. The present work evaluates retained task information using held-out predictive accuracy while also reporting reduction ratios and empirical uncertainty.
+
+\section{PCA-derived channel importance}
+Loadings can support multiple definitions of channel importance. A channel may dominate an individual component, make a large eigenvalue-weighted contribution across components, have a large projection norm in the leading subspace, or contribute to differences between class-specific subspaces. The first three criteria are unsupervised after preprocessing. The last is supervised because it requires class labels.
+
+\section{Time-series classification as an evaluation task}
+Classification provides an operational test of whether a reduced representation retains task-relevant information. The classifier is therefore an evaluation instrument rather than the principal contribution. \todo{Insert the exact MiniRocket implementation, version, ridge-classifier configuration, random seeds and primary citation.}
+
+\section{Evaluation against random subsets}
+Comparing reduced performance only with the full array can show compression with limited performance loss, but it cannot establish that the selection rule identifies unusually informative channels. Random subsets of equal cardinality provide a more relevant null reference. If $A_{\mathrm{sel}}$ is selected-subset accuracy and $A_r$ is accuracy from random draw $r$, a one-tailed pseudo-count corrected empirical $p$-value is
+\begin{equation}
+ p=\frac{1+\sum_{r=1}^{R}\mathbb{I}(A_r\ge A_{\mathrm{sel}})}{R+1}.
+\end{equation}
+The standardized difference from the null distribution is
+\begin{equation}
+ d=\frac{A_{\mathrm{sel}}-\bar{A}_{\mathrm{null}}}{s_{\mathrm{null}}}.
+\end{equation}
+Effect magnitude and statistical evidence answer different questions. A relatively large $d$ can coexist with $p>0.05$, particularly with a finite randomisation distribution.
+
+\section{Related-work synthesis}
+\todo{Replace this placeholder with a critical synthesis of 12--20 directly relevant sources. Organise by (i) PCA and dynamic PCA for temporal data, (ii) sensor or channel selection, (iii) supervised subspace methods, and (iv) multivariate time-series classification. Compare assumptions, datasets, evaluation protocols and limitations rather than listing papers sequentially.}
+
+\begin{table}[htbp]
+\centering
+\caption{Recommended structure for the related-work comparison.}
+\label{tab:related-work}
+\small
+\begin{tabularx}{\textwidth}{@{}p{25mm}p{22mm}Y Y@{}}
+\toprule
+Study & Reduction target & Evaluation strength & Limitation relevant to this project\\
+\midrule
+\todo{Author, year} & \todo{Latent features/channels} & \todo{Protocol and metrics} & \todo{Gap addressed here}\\
+\todo{Author, year} & \todo{Target} & \todo{Evidence} & \todo{Limitation}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Exploratory data analysis and spatial structure}
+\label{sec:eda}
+The three benchmarks span markedly different spatial dimensionalities. BasicMotions contains six motion channels, FingerMovements contains 28 EEG channels, and FaceDetection contains 144 dimensions. This progression is useful because it exposes different forms of redundancy. With only six variables, BasicMotions offers little room for aggressive pruning and its classification ceiling masks differences between subsets. In contrast, the two EEG datasets contain denser arrays in which correlated channels may encode overlapping activity.
+
+\begin{table}[htbp]
+\centering
+\caption{Exploratory interpretation of the three benchmark regimes. Physical descriptions should be checked against the official dataset documentation before submission.}
+\label{tab:eda-regimes}
+\begin{tabularx}{\textwidth}{@{}p{30mm}rrYY@{}}
+\toprule
+Dataset & $C$ & Candidate $k$ & Structural question & Observed evaluation issue\\
+\midrule
+BasicMotions & 6 & 2, 3 & Whether a very small inertial subset retains a simple motion signal & Ceiling saturation at 100\%\\
+FingerMovements & 28 & 3, 4, 7, 14 & Whether correlated EEG channels contain replaceable spatial information & Large variability among random subsets\\
+FaceDetection & 144 & 15, 21, 36, 72 & Whether a dense representation can be reduced while retaining class-dependent temporal information & Method and sparsity strongly interact\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Spatial topology}
+Physical topology affects how channel redundancy should be interpreted. Adjacent EEG electrodes may observe overlapping mixtures of the same underlying sources because scalp potentials are spatially smooth. Motion channels can instead represent different axes or sensor modalities, for which apparent covariance may have a different physical meaning. The loading scores used in this project do not encode sensor coordinates; they infer importance from covariance structure alone. Consequently, a spatially concentrated selected set is an outcome to inspect rather than an assumption built into the algorithm.
+
+\placeholderfigure{Insert verified sensor-layout diagrams for the three datasets. Do not map numerical indices to electrode names without authoritative metadata.}{Physical or logical channel layouts for the benchmark datasets.}
+\begin{figure}[htbp]
+    \centering
+    % Subfigure 1: BasicMotions
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        % Replace with \includegraphics{figures/basicmotions_layout.png} when ready
+        \fbox{\rule{0pt}{3cm}\rule{3cm}{0pt}}
+        \caption{BasicMotions ($C=6$)}
+        \label{fig:layout_basicmotions}
+    \end{subfigure}
+    \hfill
+    % Subfigure 2: FingerMovements
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        % Replace with \includegraphics{figures/fingermovements_layout.png} when ready
+        \fbox{\rule{0pt}{3cm}\rule{3cm}{0pt}}
+        \caption{FingerMovements ($C=28$)}
+        \label{fig:layout_fingermovements}
+    \end{subfigure}
+
+    % Subfigure 3: FaceDetection
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        % Replace with \includegraphics{figures/facedetection_layout.png} when ready
+        \fbox{\rule{0pt}{3cm}\rule{3cm}{0pt}}
+        \caption{FaceDetection ($C=144$)}
+        \label{fig:layout_facedetection}
+    \end{subfigure}
+    
+    \caption{\textbf{Physical or logical channel layouts for the benchmark datasets.} Scalp potentials exhibit spatially smooth overlapping mixtures, whereas motion channels represent distinct orthogonal axes or sensor modalities where apparent covariance carries alternative physical meanings. Because loading scores infer importance from covariance structure alone without encoding explicit sensor coordinates, spatially concentrated selections emerge as empirical outcomes to inspect rather than algorithmic assumptions.}
+    \label{fig:dataset_layouts}
+\end{figure}
+
+\subsection{Temporal dynamics and variance spectra}
+The spatial matrix contains $N\cdot T$ rows, so its covariance aggregates channel co-variation across trials and time. A scree curve plots ordered eigenvalues $\lambda_1\ge\cdots\ge\lambda_C$, while a cumulative curve plots $\operatorname{CEV}_k$. A sharp elbow suggests that a small subspace accounts for much of the observed spatial variance. It does not establish that the same subspace preserves class information. This distinction motivates evaluating several $k$ values and measuring downstream classification rather than treating an explained-variance threshold as the final criterion.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.32\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Scree_BasicMotions.png}
+    \caption{BasicMotions, diagnostic elbow $k^*=3$.}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.32\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Scree_FingerMo.png}
+    \caption{FingerMovements, diagnostic elbow $k^*=7$.}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.32\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Scree_FaceDetection.png}
+    \caption{FaceDetection, diagnostic elbow $k^*=27$.}
+  \end{subfigure}
+  \caption{Spatial PCA eigenvalue spectra and cumulative explained variance. Orange bars show individual eigenvalues, the blue curve shows cumulative explained variance, and the dashed line marks the diagnostic elbow produced for each supplied plot.}
+  \label{fig:scree-curves}
+\end{figure}
+
+The supplied diagnostic plots identify $k^*=3$, $k^*=7$ and $k^*=27$ for BasicMotions, FingerMovements and FaceDetection respectively. These values are descriptive outputs of the plotted elbow calculation. In particular, the FaceDetection value $k^*=27$ differs from the earlier experimental candidate grid $\{15,21,36,72\}$ and from the final inner-CV choice $k=36$. The plot must therefore not be presented as the source of the final $k=36$ decision. Instead, it shows that a variance-based elbow and a task-selected cardinality answer different questions: the former describes covariance compression, whereas the latter maximises validation performance among the configurations actually evaluated.
+
+\subsection{Domain interpretation and safeguards}
+FingerMovements and FaceDetection can be discussed in relation to sensorimotor and visual-event EEG only after verifying dataset documentation, electrode ordering and acquisition conditions. A numerical channel index is not itself an anatomical label. Similarly, selected channels do not establish a neural generator or causal mechanism. Domain interpretation should therefore be framed as consistency with known phenomena, supported by an authoritative mapping and literature, rather than as biological validation of the selection rule.

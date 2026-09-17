@@ -18,9 +18,26 @@
 \graphicspath{{figures/}}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{booktabs} % For professional tables
+\usepackage{tabularx} % tabularx environment
+\usepackage{array}    % \newcolumntype
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \usepackage{subcaption}
+\usepackage[final]{graphicx}
+
+\usepackage{enumitem} % Customise list environments (optional args to enumerate/description)
 \usepackage{hyperref}
+\usepackage[nameinlink]{cleveref} % \Cref, \cref cross-references
 \usepackage{natbib}
+
+% Fallbacks for placeholders (so the project compiles before final content is added)
+\newcommand{\todo}[1]{\textbf{[TODO: #1]}}
+\newcommand{\placeholderfigure}[2]{%
+  \begin{figure}[htbp]
+    \centering
+    \fbox{\parbox{0.9\linewidth}{\textbf{Placeholder figure.}\\#1}}
+    \caption{#2}
+  \end{figure}%
+}
 
 \begin{document}
 
