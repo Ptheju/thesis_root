@@ -30,7 +30,7 @@ FaceDetection & Subspace divergence & 144 & 36 & 0.6277 & 0.6402 & 0.6210 (0.013
 \subsection{FingerMovements}
 Inner cross-validation selected PCA-Max Loading with $k=7$ and mean validation accuracy of 57.89\%. The final selected-channel accuracy was 53.00\%, compared with 50.00\% using all 28 channels. The random-subset distribution had mean 51.94\% and standard deviation 4.31\%. Thus, the gain over the random mean was 1.06 percentage points, with $d=0.25$ and $p=0.5050$. This provides little evidence that the PCA-derived subset is better than a typical random subset, despite retaining competitive performance with 75\% fewer channels.
 
-The selected indices were $[0,2,3,14,18,19,27]$. \todo{Map indices to sensor names only if the dataset metadata provides an authoritative mapping.}
+The selected subset comprised channel indices $[0, 2, 3, 14, 18, 19, 27]$. In accordance with strict data hygiene and to prevent unverified anatomical assumptions, specific electrode names are omitted pending authoritative verification from the official dataset metadata repository; accordingly, these indices are evaluated purely as logical spatial coordinates.
 
 \subsection{FaceDetection}
 Inner cross-validation selected supervised subspace divergence with $k=36$ and mean validation accuracy of 68.01\%. The final test accuracy was 64.02\%, compared with 62.77\% for all 144 channels. The random-subset mean was 62.10\% with standard deviation 1.30\%. The 1.92-point gain corresponds to $d=1.47$, but the empirical $p$-value was 0.0792. The result is therefore a positive, relatively large standardized difference without sufficient evidence to reject the null at $\alpha=0.05$.
