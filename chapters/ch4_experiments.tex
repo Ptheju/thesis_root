@@ -3,7 +3,49 @@
 
 \noindent
 Rigorous evaluation of spatial dimensionality reduction in multivariate time series (MTS) requires a standardized, reproducible experimental protocol. Because feature and channel selection introduce structural transformations prior to classification, flawed evaluation designs can easily lead to data leakage, selection bias, and overoptimistic generalization estimates. This chapter details the experimental architecture designed for this study, covering dataset specifications, data hygiene protocols, feature transformation pipelines, nested cross-validation frameworks, and non-parametric statistical validation harnesses.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    every node/.style={font=\small},
+    process/.style={rectangle, draw=black, thick, rounded corners, text width=9.5cm, align=center, fill=blue!5, minimum height=0.9cm},
+    decision/.style={rectangle, draw=black, thick, rounded corners, text width=4.2cm, align=center, fill=orange!10, minimum height=1.1cm},
+    arrow/.style={thick,->,>=stealth}
+]
 
+% Nodes
+\node (data) [process] {1. Raw MTS Data Tensor: $\mathbf{X} \in \mathbb{R}^{N \times C \times T}$};
+\node (split) [process, below of=data] {2. Strict Data Hygiene Split (Train/Test Isolation)};
+\node (prep) [process, below of=split] {3. Feature Scaling \& Spatial Reshaping ($\mathbf{X}_{\text{spatial}}$)};
+
+% Side-by-side decision blocks
+\node (pca) [decision, below left of=prep, xshift=-2.2cm, yshift=-1.0cm] {4A. Unsupervised PCA\\(Eigen-Decomposition \& Kneedle $k^*$)};
+\node (sup) [decision, below right of=prep, xshift=2.2cm, yshift=-1.0cm] {4B. Supervised Filtering\\(Class-Subspace \& ANOVA $F$-stats)};
+
+% Prune block placed further down
+\node (prune) [process, below of=prep, yshift=-2.6cm] {5. Sparse Channel Subset Selection ($\mathcal{S}^*$ of size $k^*$)};
+\node (clf) [process, below of=prune] {6. Downstream Classification (\texttt{MiniRocket} + \texttt{RidgeClassifierCV})};
+\node (val) [process, below of=clf] {7. Statistical Validation ($R=100$ Monte Carlo Nulls, $p$-values, Cohen's $d$)};
+
+% Clean Arrow Routing avoiding side-wall intrusions
+\draw [arrow] (data) -- (split);
+\draw [arrow] (split) -- (prep);
+
+% From prep down to pca and sup
+\draw [arrow] (prep.south) -- ++(0,-0.3) -| (pca.north);
+\draw [arrow] (prep.south) -- ++(0,-0.3) -| (sup.north);
+
+% From pca and sup entering cleanly from the TOP of prune
+\draw [arrow] (pca.south) |- ([xshift=-2cm]prune.north);
+\draw [arrow] (sup.south) |- ([xshift=2cm]prune.north);
+
+\draw [arrow] (prune) -- (clf);
+\draw [arrow] (clf) -- (val);
+
+\end{tikzpicture}
+\caption{System architecture and experimental design pipeline detailing the workflow from raw tensor acquisition, strict train/test isolation, dual-paradigm feature reduction, and Monte Carlo statistical validation.}
+\label{fig:experimental_pipeline}
+\end{figure}
 \section{Benchmark Datasets and Topologies}
 \label{sec:datasets}
 
