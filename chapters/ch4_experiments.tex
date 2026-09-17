@@ -1,25 +1,91 @@
 \chapter{Experimental Design and Evaluation Protocol}
-\label{ch:experiments}
+\label{chap:experimental_design}
 
-This chapter details the empirical evaluation harness, hyperparameter grids, and rigorous data hygiene protocols implemented to prevent data leakage.
+\noindent
+Rigorous evaluation of spatial dimensionality reduction in multivariate time series (MTS) requires a standardized, reproducible experimental protocol. Because feature and channel selection introduce structural transformations prior to classification, flawed evaluation designs can easily lead to data leakage, selection bias, and overoptimistic generalization estimates. This chapter details the experimental architecture designed for this study, covering dataset specifications, data hygiene protocols, feature transformation pipelines, nested cross-validation frameworks, and non-parametric statistical validation harnesses.
 
-\section{Benchmark Topologies}
-The evaluation framework spans three standard multivariate time series domains from the UEA/UCR repository:
+\section{Benchmark Datasets and Topologies}
+\label{sec:datasets}
+
+\noindent
+To evaluate the generalizability of the spatial channel selection framework across diverse recording domains, three distinct benchmark datasets were selected from the time series classification repository:
+
 \begin{itemize}
-    \item \textbf{BasicMotions ($C = 6$):} Low-dimensional motion classification.
-    \item \textbf{FingerMovements ($C = 28$):} Sensorimotor EEG rhythms ($\mu/\beta$ band).
-    \item \textbf{FaceDetection ($C = 144$):} High-density visual ERP cognitive trials.
+    \item \textbf{BasicMotions ($C = 6$):} A low-dimensional motion capture dataset comprising 6 inertial sensor channels (accelerometer and gyroscope axes) recording simple physical movements. It serves as a baseline for low-complexity multi-axis temporal synchronization.
+    \item \textbf{FingerMovements ($C = 28$):} A sensorimotor electroencephalography (EEG) dataset consisting of 28 channels capturing neural oscillations ($\mu/\beta$ rhythms) associated with motor tasks.
+    \item \textbf{FaceDetection ($C = 144$):} A high-density neuroimaging dataset comprising 144 sensor channels recording visual event-related potentials (ERPs) during face and object recognition trials.
 \end{itemize}
 
-\section{Downstream Classification Engine}
-Following standard time series classification protocols, \texttt{MiniRocket} combined with \texttt{RidgeClassifierCV} serves as the primary feature transformation and classification engine, ensuring computational scalability across thousands of ablation iterations.
+\noindent
+Each dataset provides distinct spatial topologies, varying from tightly coupled orthogonal motion axes to spatially smooth, high-density cortical scalp potentials.
 
-\section{Data Hygiene and Prevention of Leakage}
-To ensure methodological validity, strict separation of data splits is enforced:
+\section{Data Hygiene and Leakage Prevention Protocols}
+\label{sec:data_hygiene}
+
+\noindent
+A primary methodological risk in automated channel selection is inadvertent data leakage, where information from the evaluation test split contaminates the feature selection or training phase. To ensure absolute academic validity, a strict data hygiene protocol is enforced across all experiments:
+
+\begin{enumerate}
+    \item \textbf{Partition Isolation:} All spatial covariance calculations, eigenvalue decompositions, PCA loading extractions, subspace rotation divergences, and ANOVA $F$-score rankings are computed \textbf{strictly and exclusively on the training partition} ($\mathbf{X}_{\text{train}}, \mathbf{y}_{\text{train}}$).
+    \item \textbf{Sequestration of Test Data:} The test partition ($\mathbf{X}_{\text{test}}, \mathbf{y}_{\text{test}}$) remains completely unseen and untouched during the entire channel identification and subset selection phase.
+    \item \textbf{Independent Spatial Slicing:} Once the optimal sparse subset mapping $\mathcal{S}^*$ of size $k^*$ is derived from training statistics, both training and test tensors are independently sliced along the spatial axis:
+    \begin{equation}
+        \mathbf{X}_{\text{train}}^{*} = \mathbf{X}_{\text{train}}[:, \mathcal{S}^^*, :], \quad \mathbf{X}_{\text{test}}^{*} = \mathbf{X}_{\text{test}}[:, \mathcal{S}^^*, :]
+    \end{equation}
+    \item \textbf{Robust Preprocessing:} To mitigate outlier distortion, feature values undergo robust min-max scaling utilizing the \textbf{98th percentile} to establish scaling bounds prior to tensor reshaping and zero-mean column-wise centering.
+\end{enumerate}
+
+\section{Feature Extraction and Classification Engine}
+\label{sec:classifier_engine}
+
+\noindent
+To isolate the impact of spatial channel reduction from classifier-specific artifacts, a standardized, high-performance downstream classification pipeline is maintained across all evaluations:
+
 \begin{itemize}
-    \item All channel scoring mechanisms (PCA loadings, subspace divergence matrices, and ANOVA $F$-scores) are computed \textbf{strictly and exclusively on the training partition} ($\mathbf{X}_{\text{train}}, \mathbf{y}_{\text{train}}$).
-    \item The test partition ($\mathbf{X}_{\text{test}}, \mathbf{y}_{\text{test}}$) remains completely unseen during the channel selection phase.
+    \item \textbf{Feature Transformation (\texttt{MiniRocket}):} Rather than operating directly on raw multivariate tensors or handcrafted statistical descriptors, reduced tensors ($\mathbf{X}^* \in \mathbb{R}^{N \times k^* \times T}$) are processed via \texttt{MiniRocket}. This architecture applies thousands of randomly initialized convolutional kernels to efficiently capture temporal phase and shape characteristics, projecting MTS data into a scalable feature matrix.
+    \item \textbf{Classification Estimator (\texttt{RidgeClassifierCV}):} Downstream classification is executed using a ridge regression classifier with built-in cross-validation, automatically optimizing regularization parameters across logarithmic scales without manual hyperparameter tuning on the test set.
 \end{itemize}
 
-\section{Parametric Sensitivity and Balanced Results Reporting}
-To avoid post-hoc reporting bias, results are presented across a multi-tier grid of candidate values for $k$, rather than highlighting isolated single points.
+\section{Nested Cross-Validatory Setup and Hyperparameter Grids}
+\label{sec:nested_cv}
+
+\noindent
+To determine optimal subset sizes ($k^*$) and selection methods without overfitting, a nested evaluation structure is implemented:
+
+\begin{itemize}
+    \item \textbf{Inner Cross-Validation:} Five-fold cross-validation is executed entirely within the training partition to evaluate candidate subset sizes and selection criteria. For instance, grid sweeps evaluated candidate grids such as $k \in [2, 3]$ for \textit{BasicMotions}, $k \in [3, 4, 7, 14]$ for \textit{FingerMovements}, and $k \in [15, 21, 36, 72]$ for \textit{FaceDetection}.
+    \item \textbf{Outer Evaluation:} The configuration maximizing inner cross-validation accuracy is selected and locked before evaluating a single held-out test set. Exploratory grid searches are strictly segregated from primary inferential results to prevent selection bias.
+\end{itemize}
+
+\section{Non-Parametric Monte Carlo Permutation Testing Harness}
+\label{sec:monte_carlo}
+
+\noindent
+To test whether algorithmic channel selection yields performance gains exceeding random spatial coincidence, a non-parametric Monte Carlo permutation testing harness is integrated:
+
+\begin{itemize}
+    \item \textbf{Empirical Null Distribution:} For each evaluation dataset, $R = 100$ independent iterations of uniform random channel subsampling of size $k^*$ are executed under identical downstream classification conditions. This generates a non-parametric empirical null accuracy distribution:
+    \begin{equation}
+        \mathcal{D}_{\text{rand}} = \left\{ A_{\text{rand}}^{(1)}, A_{\text{rand}}^{(2)}, \dots, A_{\text{rand}}^{(R)} \right\}
+    \end{equation}
+    \item \textbf{Significance Testing ($p$-values):} Statistical divergence between selected subset accuracy $A_{\text{sel}}$ and the random null baseline is quantified using pseudo-count corrected empirical $p$-values:
+    \begin{equation}
+        p = \frac{1 + \sum_{r=1}^R \mathbb{I}\left( A_{\text{rand}}^{(r)} \ge A_{\text{sel}} \right)}{R + 1}
+    \end{equation}
+    \item \textbf{Standardized Effect Sizes (Cohen's $d$):} Directional separation independent of sample size scaling is measured via Cohen's $d$:
+    \begin{equation}
+        d = \frac{A_{\text{sel}} - \mu_{\text{rand}}}{\sigma_{\text{rand}}}
+    \end{equation}
+    where $\mu_{\text{rand}}$ and $\sigma_{\text{rand}}$ denote the mean and standard deviation of the random null distribution $\mathcal{D}_{\text{rand}}$.
+\end{itemize}
+
+\section{Performance Metrics and Computational Profiling Setup}
+\label{sec:profiling_setup}
+
+\noindent
+Evaluation metrics extend beyond standard classification accuracy to ensure comprehensive analysis:
+
+\begin{itemize}
+    \item \textbf{Classification Metrics:} Overall test accuracy, macro-averaged F1 score, and weighted F1 score are computed to account for class distribution properties.
+    \item \textbf{Computational Profiling:} To quantify operational efficiency, profiling scripts track transformation latency, fitting latency, and peak memory allocation (measured in megabytes) when processing uncompressed full-array tensors ($\mathbf{X}$) versus reduced subset tensors ($\mathbf{X}^*$).
+\end{itemize}

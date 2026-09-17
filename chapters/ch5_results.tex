@@ -1,4 +1,181 @@
-\chapter{Results}
-\label{ch:results}
+\chapter{Results and Critical Evaluation}
+\label{chap:results}
 
-Present quantitative and qualitative results: tables, plots, and a concise summary of key findings.
+\section{Reporting strategy}
+The results document contains multiple experimental generations. Exploratory grid searches are useful for sensitivity analysis but were partly used to identify promising settings. The primary claims in this chapter therefore use the later protocol in which method and $k$ were selected by five-fold cross-validation on the training data before a single held-out test evaluation. This prevents optimistic reporting caused by choosing a configuration on test accuracy.
+
+\section{Conventional feature-space PCA}
+In an exploratory EEG pipeline, 22 catch22 descriptors were extracted for each of 62 channels, producing 1,364 features. PCA required 929 components to retain 95.02\% cumulative variance, while downstream Random Forest accuracy was approximately 50.48\%. This combination indicates that high cumulative explained variance did not preserve useful discrimination in that experiment. It does not establish a universal limitation of PCA, because the result is conditional on the feature extraction, scaling, classifier and split.
+
+\placeholderfigure{Insert the cumulative explained-variance curve for the catch22 representation.}{Cumulative explained variance for the exploratory feature-space PCA baseline.}
+
+\section{Primary nested-selection results}
+\Cref{tab:primary-results} reports the final supplied benchmark. Both selected representations remove 75\% of their channels. FingerMovements improves by three percentage points over the full-array baseline but only 1.06 points over the random-subset mean. FaceDetection improves by 1.25 points over the full-array baseline and 1.92 points over the random mean.
+
+\begin{table}[htbp]
+\centering
+\caption{Primary held-out results after training-only five-fold configuration selection ($R=100$ random subsets).}
+\label{tab:primary-results}
+\small
+\begin{tabularx}{\textwidth}{@{}Y Y r r r r r r r@{}}
+\toprule
+Dataset & Method & $C$ & $k$ & Full & Selected & Null mean (SD) & $d$ & $p$\\
+\midrule
+FingerMovements & PCA-Max Loading & 28 & 7 & 0.5000 & 0.5300 & 0.5194 (0.0431) & 0.25 & 0.5050\\
+FaceDetection & Subspace divergence & 144 & 36 & 0.6277 & 0.6402 & 0.6210 (0.0130) & 1.47 & 0.0792\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{FingerMovements}
+Inner cross-validation selected PCA-Max Loading with $k=7$ and mean validation accuracy of 57.89\%. The final selected-channel accuracy was 53.00\%, compared with 50.00\% using all 28 channels. The random-subset distribution had mean 51.94\% and standard deviation 4.31\%. Thus, the gain over the random mean was 1.06 percentage points, with $d=0.25$ and $p=0.5050$. This provides little evidence that the PCA-derived subset is better than a typical random subset, despite retaining competitive performance with 75\% fewer channels.
+
+The selected indices were $[0,2,3,14,18,19,27]$. \todo{Map indices to sensor names only if the dataset metadata provides an authoritative mapping.}
+
+\subsection{FaceDetection}
+Inner cross-validation selected supervised subspace divergence with $k=36$ and mean validation accuracy of 68.01\%. The final test accuracy was 64.02\%, compared with 62.77\% for all 144 channels. The random-subset mean was 62.10\% with standard deviation 1.30\%. The 1.92-point gain corresponds to $d=1.47$, but the empirical $p$-value was 0.0792. The result is therefore a positive, relatively large standardized difference without sufficient evidence to reject the null at $\alpha=0.05$.
+
+The selected indices were 2, 12, 13, 16, 19, 22, 28, 30, 31, 32, 36, 39, 48, 49, 51, 57, 58, 60, 64, 65, 72, 87, 88, 91, 93, 95, 99, 108, 109, 111, 114, 117, 120, 123, 124 and 139.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.88\textwidth]{facedetection-null-r100.png}
+  \caption{Empirical random-channel null distribution for the selected FaceDetection configuration ($R=100$). The red line marks selected-subset accuracy and the dashed line marks the null mean.}
+  \label{fig:face-null}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.88\textwidth]{fingermovements-null-r100.png}
+  \caption{Empirical random-channel null distribution for the selected FingerMovements configuration ($R=100$).}
+  \label{fig:finger-null}
+\end{figure}
+
+\section{Ceiling-saturated benchmark}
+Exploratory BasicMotions experiments produced 100\% accuracy for the full array, selected subsets and many random subsets. This ceiling prevents meaningful discrimination between selection strategies. \todo{Insert the final-protocol BasicMotions output if it was rerun; otherwise keep this discussion qualitative and omit it from the primary numerical table.}
+
+\section{Sensitivity analysis}
+Earlier grid experiments evaluated multiple $k$ values and all four selection criteria. Those experiments show that performance can vary materially with both method and channel count, reinforcing the need for training-only selection. They should be labelled exploratory rather than merged with the primary inferential results.
+
+\subsection{FingerMovements exploratory grid}
+\Cref{tab:finger-grid} gives the complete supplied grid rather than only its most favourable row. PCA-Max Loading performs best at $k=3$ and $k=4$ in this exploratory evaluation, but its advantage declines at larger subsets. PCA-Norm and class-conditional selection underperform the null for several small-$k$ settings. The variation demonstrates that neither the PCA label nor increased channel count guarantees improvement.
+
+\begin{table}[H]
+\centering
+\caption{Exploratory FingerMovements grid ($R=30$ in the supplied early experiment). These test-grid results are descriptive and are not the primary inferential benchmark.}
+\label{tab:finger-grid}
+\scriptsize
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Method & $k$ & Accuracy & Null mean & Gain (pp) & $d$ / $p$\\
+\midrule
+Max Loading & 3 & 0.590 & 0.5127 & 7.73 & 2.07 / 0.0645\\
+Max Loading & 4 & 0.610 & 0.5143 & 9.57 & 1.90 / 0.0645\\
+Max Loading & 7 & 0.530 & 0.5230 & 0.70 & 0.21 / 0.6129\\
+Max Loading & 14 & 0.530 & 0.5013 & 2.87 & 0.80 / 0.2258\\
+Weighted Sum & 3 & 0.570 & 0.5197 & 5.03 & 1.10 / 0.2258\\
+Weighted Sum & 4 & 0.540 & 0.5247 & 1.53 & 0.45 / 0.4839\\
+Weighted Sum & 7 & 0.540 & 0.5087 & 3.13 & 0.87 / 0.2903\\
+Weighted Sum & 14 & 0.530 & 0.5143 & 1.57 & 0.43 / 0.4839\\
+Norm Loadings & 3 & 0.470 & 0.4983 & -2.83 & -0.75 / 0.8387\\
+Norm Loadings & 4 & 0.490 & 0.5180 & -2.80 & -0.64 / 0.7419\\
+Norm Loadings & 7 & 0.530 & 0.5120 & 1.80 & 0.54 / 0.4516\\
+Norm Loadings & 14 & 0.510 & 0.5093 & 0.07 & 0.02 / 0.5161\\
+Class Subspace & 3 & 0.500 & 0.4987 & 0.13 & 0.02 / 0.5484\\
+Class Subspace & 4 & 0.490 & 0.5190 & -2.90 & -0.62 / 0.7742\\
+Class Subspace & 7 & 0.470 & 0.5190 & -4.90 & -1.28 / 0.9032\\
+Class Subspace & 14 & 0.460 & 0.5063 & -4.63 & -1.19 / 0.8710\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{FaceDetection exploratory grid}
+FaceDetection displays a different pattern. No loading-based method dominates throughout the grid. Weighted Sum is competitive at $k=21$, Norm Loadings is competitive at $k=72$, and class-conditional divergence produces its strongest result at $k=36$. The result supports the use of inner validation: selecting $k$ by variance alone would not necessarily select the best task-relevant representation.
+
+\begin{table}[H]
+\centering
+\caption{Exploratory FaceDetection grid ($R=30$). Values are separated from the primary $R=100$ nested-selection result.}
+\label{tab:face-grid}
+\scriptsize
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Method & $k$ & Accuracy & Null mean & Gain (pp) & $d$ / $p$\\
+\midrule
+Max Loading & 15 & 0.6107 & 0.5974 & 1.32 & 0.87 / 0.2903\\
+Max Loading & 21 & 0.6070 & 0.6118 & -0.48 & -0.35 / 0.6452\\
+Max Loading & 36 & 0.5999 & 0.6235 & -2.36 & -2.03 / 1.0000\\
+Max Loading & 72 & 0.6189 & 0.6262 & -0.73 & -0.61 / 0.7419\\
+Weighted Sum & 15 & 0.5894 & 0.6054 & -1.60 & -0.84 / 0.7742\\
+Weighted Sum & 21 & 0.6271 & 0.6146 & 1.26 & 0.85 / 0.2581\\
+Weighted Sum & 36 & 0.6078 & 0.6285 & -2.06 & -1.35 / 0.9677\\
+Weighted Sum & 72 & 0.6158 & 0.6269 & -1.11 & -1.04 / 0.9032\\
+Norm Loadings & 15 & 0.6098 & 0.6107 & -0.09 & -0.06 / 0.5806\\
+Norm Loadings & 21 & 0.6180 & 0.6122 & 0.59 & 0.40 / 0.3548\\
+Norm Loadings & 36 & 0.6169 & 0.6262 & -0.93 & -0.82 / 0.8065\\
+Norm Loadings & 72 & 0.6291 & 0.6239 & 0.52 & 0.48 / 0.4516\\
+Class Subspace & 15 & 0.5911 & 0.6093 & -1.83 & -1.06 / 0.8710\\
+Class Subspace & 21 & 0.6027 & 0.6104 & -0.77 & -0.56 / 0.7097\\
+Class Subspace & 36 & 0.6402 & 0.6189 & 2.13 & 1.69 / 0.0968\\
+Class Subspace & 72 & 0.6368 & 0.6266 & 1.01 & 1.03 / 0.1290\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ceiling and saturation effects}
+Across the supplied BasicMotions grid, several methods and both $k=2$ and $k=3$ achieved 100\% accuracy. Random subsets also reached the ceiling. Once both the selected and null distributions saturate, accuracy cannot rank selection rules. Reporting the ceiling is still valuable because it identifies an evaluation limitation: this dataset may test whether aggressive compression is harmless, but it cannot establish that one selector is more informative than another.
+
+\section{Statistical rigor and null-distribution analysis}
+For a fixed selected cardinality $k$, the randomisation procedure samples $S_r$ uniformly from all channel subsets of size $k$ and evaluates the complete downstream pipeline. This defines
+\begin{equation}
+ \mathcal{D}_{\mathrm{rand}}=\{A(S_1),\ldots,A(S_R)\}.
+\end{equation}
+The null is conditional on the dataset split, classifier and subset size. It does not test PCA in general; it tests whether the observed PCA-derived subset is unusually accurate relative to cardinality-matched random subsets under the implemented protocol.
+
+The pseudo-count correction prevents an estimated probability of exactly zero with finite $R$. With $R=100$, attainable values occur in increments of approximately $1/101$. Increasing $R$ improves Monte Carlo resolution and stability but does not systematically lower the $p$-value. This is demonstrated by the revision from the exploratory to primary protocol: FingerMovements changed from an apparently large standardized exploratory effect to $d=0.25$ and $p=0.5050$ once training-only configuration selection and 100 random draws were used.
+
+Cohen's $d$ expresses the selected-null gap in units of null standard deviation. It is descriptive here rather than a substitute for the empirical test. FaceDetection's $d=1.47$ indicates a large separation relative to its narrow null spread, while $p=0.0792$ shows that the selected accuracy was not sufficiently extreme under the finite empirical distribution to meet $\alpha=0.05$. Both quantities should therefore be reported together.
+
+\section{Computational implications}
+Reducing FaceDetection from 144 to 36 channels and FingerMovements from 28 to seven reduces the number of input values passed to the time-series transform by 75\%, assuming sequence length and case count remain unchanged. It also reduces raw tensor storage from $NCT$ values to $NkT$. This is an input-size result, not a measured runtime claim: MiniRocket transformation and ridge fitting need not scale perfectly linearly with $C$.
+
+A synthetic profiling run compared the full and reduced input configurations under the same profiling script. Training latency decreased from 0.3993~s to 0.2374~s, corresponding to a reported $1.68\times$ speedup and a 40.55\% reduction in elapsed time. Peak memory decreased from 18.11~MB to 10.83~MB, a reduction of approximately 40.20\%. These measurements demonstrate the behaviour of the synthetic workload; they should not be interpreted as production latency or as a hardware-independent estimate.
+
+\begin{table}[htbp]
+\centering
+\caption{Synthetic computational profile supplied for the full and reduced arrays. Prediction latency was not reported.}
+\label{tab:runtime}
+\begin{tabularx}{\textwidth}{@{}Yrrrr@{}}
+\toprule
+Configuration & Transform time & Fit time & Peak memory & Prediction time\\
+\midrule
+Full-array synthetic run & 0.3993~s & & 18.11~MB & \\
+Reduced-array synthetic run & 0.2374~s & & 10.83~MB & \\
+Relative change & $-40.55\%$ & & $-40.20\%$ & \\
+Speedup & $1.68\times$ & & & \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+For a fair final profile, each configuration should be run repeatedly on the same hardware after a warm-up, with identical seeds and thread settings. The report should identify the dataset, processor, thread count, software versions and number of repetitions, then report the median and dispersion rather than only one timing. The OpenMP deprecation message observed during execution is an environment warning and is not evidence of a failed experiment. Until repeated measurements exist, practical claims should remain limited to the supplied synthetic workload, reduced input dimensionality and potential acquisition economy.
+
+\section{Error analysis}
+Negative gains in \cref{tab:finger-grid,tab:face-grid} show that preserving dominant covariance directions can select channels that are redundant for classification or dominated by nuisance variation. FingerMovements class-conditional selection becomes progressively worse at $k=7$ and $k=14$ in the exploratory grid, whereas FaceDetection class-conditional divergence improves at $k=36$. This reversal suggests that supervised subspace comparison is not uniformly robust and may depend on sample size, class covariance stability and the relationship between discriminative and high-variance structure.
+
+The FaceDetection Max Loading result at $k=36$ has a negative standardized difference of $d=-2.03$ in the exploratory grid. Adding channels did not rescue the method because subset composition, not cardinality alone, determined the retained signal. Conversely, random-subset variability is broad on FingerMovements, making a small selected-null difference difficult to distinguish from chance. These failure cases temper the positive compression result and motivate repeated-split evaluation.
+
+Covariance estimates are also sensitive to correlated noise, artefacts and preprocessing. A high-variance artefact can dominate an eigenvector even when it is unrelated to the class label. Training-only fitting prevents test leakage but does not eliminate this statistical vulnerability. Robust covariance estimators, artefact rejection and stability selection are therefore appropriate future comparisons.
+
+\section{Answering the research questions}
+\textbf{RQ1.} The experiments show that 75\% channel reduction can retain, and in these two cases slightly improve, full-array test accuracy. This supports performance retention, not universal superiority.
+
+\textbf{RQ2.} The selected method differed by dataset: an unsupervised maximum-loading criterion was chosen for FingerMovements, whereas supervised class-conditional divergence was chosen for FaceDetection. The result suggests that the useful definition of PCA importance depends on signal structure.
+
+\textbf{RQ3.} Neither primary comparison demonstrated conventional statistical significance. FingerMovements produced weak evidence ($d=0.25$, $p=0.5050$). FaceDetection produced a larger standardized difference ($d=1.47$) but remained above the 0.05 threshold ($p=0.0792$).
+
+\textbf{RQ4.} Effects were dataset-dependent. A ceiling dominated BasicMotions, random-subset variability dominated FingerMovements, and FaceDetection showed the strongest directional result.
+
+\section{Critical interpretation}
+The strongest conclusion is economical rather than inferential: substantial channel reduction was achieved without degrading the observed test accuracy. A stronger claim that PCA selection is better than random selection is not supported at $\alpha=0.05$. The gap between the FaceDetection effect size and $p$-value may reflect finite randomisation, dataset variability or a non-Gaussian/discrete null. Increasing $R$ would improve resolution but would not guarantee significance.
+
+The result also illustrates why methodological taxonomy matters. PCA-Max Loading is unsupervised with respect to labels, whereas class-conditional divergence is supervised. Grouping them as ``pure unsupervised PCA'' would misstate the source of information used. Finally, test performance should not be used to retrospectively choose among methods or $k$ values; the nested selection protocol is therefore a substantive improvement over the exploratory grid.
+

@@ -1,27 +1,156 @@
-\chapter{Methodology}
+\chapter{Methodology and Mathematical Framework}
 \label{ch:methodology}
 
-This chapter formalizes the mathematical framework for dimensionality reduction in multivariate time series (MTS), explicitly distinguishing between unsupervised principal component representation and supervised statistical filtering.
+\noindent
+This chapter presents the formal methodological and mathematical framework designed to investigate spatial dimensionality reduction in multivariate time series (MTS). To address the fundamental trade-off between computational efficiency, information retention, and physical or physiological interpretability, this framework establishes a comparative architecture contrasting unsupervised principal component representation learning with supervised statistical filtering paradigms.
 
-\section{Problem Formulation and Notation}
-Let a multivariate time series dataset be represented as a 3D tensor $\mathbf{X} \in \mathbb{R}^{N \times C \times T}$, where $N$ denotes the number of training instances, $C$ represents the total number of sensor channels, and $T$ is the number of timepoints per instance. Each sample is associated with a class label vector $\mathbf{y} \in \{1, \dots, K\}^N$.
+\section{Introduction and Research Design}
+\label{sec:method_intro}
 
-\section{Unsupervised PCA-Based Channel Selection}
-To perform dimensionality reduction while retaining physical sensor interpretability, spatial PCA is computed across the multichannel array. 
+\noindent
+Multivariate time series classification (TSC) presents unique computational and analytical challenges across diverse scientific domains, ranging from industrial sensor monitoring to high-density neuroimaging. As sensor array density increases, the resulting data structures capture rich temporal interactions but frequently introduce severe spatial redundancy. Adjacent physical sensors often record highly correlated background signals, inflating the dimensionality of the feature space without providing proportional gains in class-discriminative information. 
+
+\noindent
+To mitigate this challenge while avoiding the loss of physical interpretability inherent to blind feature compression, spatial channel selection aims to identify an optimal, sparse subset of sensors. This chapter outlines the dual-paradigm framework adopted in this study: first, an unsupervised variance-maximizing approach utilizing Principal Component Analysis (PCA) eigen-decomposition and dynamic scree-elbow derivation; second, supervised statistical filtering leveraging class-conditional subspace divergences and pointwise temporal ANOVA $F$-statistics. Finally, a rigorous non-parametric Monte Carlo permutation testing harness is established to evaluate the statistical significance of any performance retention against random spatial baselines.
+
+\section{Problem Formulation and Tensor Notation}
+\label{sec:problem_formulation}
+
+\noindent
+Let a multivariate time series collection be formally represented as a three-dimensional tensor $\mathbf{X} \in \mathbb{R}^{N \times C \times T}$, where $N$ denotes the total number of independent instances (trials or epochs), $C$ represents the total number of physical sensor channels or spatial coordinates, and $T$ signifies the number of discrete temporal samples per instance. Each individual instance $i \in \{1, \dots, N\}$ is associated with a discrete categorical class label $y_i \in \{1, \dots, K\}$, where $K$ is the total number of target classes. 
+
+\noindent
+In standard time series classification workflows, downstream estimators operate directly on the complete multichannel tensor $\mathbf{X}$. However, when analyzing high-density montages, the presence of uninformative or artifactual channels can degrade classifier generalisation. Consequently, the primary objective of spatial channel selection is to define an indexing function that isolates a sparse subset of physical channels $\mathcal{S}^* \subset \{1, \dots, C\}$ of cardinality $|\mathcal{S}^*| = k^* \ll C$. Pruning the tensor yields a reduced representation:
+\begin{equation}
+    \mathbf{X}^* = \mathbf{X}[:, \mathcal{S}^* , :] \in \mathbb{R}^{N \times k^* \times T}
+\end{equation}
+The core evaluation criterion governing this process requires that $\mathbf{X}^*$ preserves or enhances classification accuracy relative to the full-array baseline $\mathbf{X}$, while significantly reducing hardware complexity and computational latency.
+
+\section{Unsupervised PCA-Based Representation Learning}
+\label{sec:unsupervised_pca}
+
+\noindent
+Unsupervised dimensionality reduction relies entirely on analyzing the spatial covariance structure across the sensor array without incorporating class label information during the feature selection phase. This constraint ensures that channel ranking remains entirely unbiased toward training labels, focusing exclusively on identifying dominant energy structures within the physical system.
+
+\subsection{Spatial Covariance and Eigen-Decomposition}
+\noindent
+To evaluate global variance distribution across the spatial domain, the temporal and instance dimensions of the training tensor $\mathbf{X}_{\text{train}} \in \mathbb{R}^{N \times C \times T}$ are reshaped into a flattened spatial observation matrix $\mathbf{X}_{\text{spatial}} \in \mathbb{R}^{(N \cdot T) \times C}$. After column-wise centering to ensure zero mean across all spatial coordinates, the empirical spatial covariance matrix $\mathbf{\Sigma} \in \mathbb{R}^{C \times C}$ is computed as:
+\begin{equation}
+    \mathbf{\Sigma} = \frac{1}{N \cdot T - 1} \mathbf{X}_{\text{spatial}}^\top \mathbf{X}_{\text{spatial}}
+\end{equation}
+
+\noindent
+The spatial covariance matrix $\mathbf{\Sigma}$ is subsequently decomposed into its orthogonal eigenvectors and eigenvalues via spectral theorem expansion:
+\begin{equation}
+    \mathbf{\Sigma} = \mathbf{V} \mathbf{\Lambda} \mathbf{V}^\top
+\end{equation}
+where $\mathbf{\Lambda} = \text{diag}(\lambda_1, \lambda_2, \dots, \lambda_C)$ contains the non-negative eigenvalues ordered monotonically such that $\lambda_1 \ge \lambda_2 \ge \dots \ge \lambda_C$, and $\mathbf{V} = [\mathbf{v}_1, \mathbf{v}_2, \dots, \mathbf{v}_C]$ represents the corresponding orthonormal principal component loading vectors. Each eigenvector $\mathbf{v}_m$ defines a principal direction along which the spatial variance of the multivariate system is maximized.
+
+\subsection{Dynamic Scree-Elbow Optimization ($k^*$)}
+\noindent
+A critical challenge in spatial channel reduction is determining the optimal subset size $k^*$ without relying on arbitrary retention thresholds (such as fixed percentage cuts like 25\% or 50%). Fixed thresholds frequently lead to over-compression in complex topologies or under-compression in simple domains. To overcome this, the optimal subset size $k^*$ is derived dynamically from the eigenvalue scree curve using geometric curvature analysis.
+
+\noindent
+The normalized eigenvalues, representing the fractional variance explained by each orthogonal component, are mapped to a normalized unit coordinate space. The Kneedle algorithm identifies the optimal elbow point $k^*$ by calculating the maximum perpendicular distance between the cumulative scree curve and the linear secant spanning from the first component coordinate to the final component coordinate:
+\begin{equation}
+    k^* = \arg\max_{m \in \{1, \dots, C\}} \text{Perpendicular Distance}\left(\left(1, \tilde{\lambda}_1\right) \to \left(C, \tilde{\lambda}_C\right), \left(m, \tilde{\lambda}_m\right)\right)
+\end{equation}
+This formulation ensures that $k^*$ is selected precisely at the inflection point where residual components transition from capturing structured system variance to modeling uniform background noise.
+
+\subsection{Orthogonal Extremal Selection ($\text{PCA\_Max\_Loading}$)}
+\noindent
+Once the optimal dimensionality $k^*$ is established, continuous latent components must be mapped back to discrete physical sensors. Rather than grouping channels via heuristic clustering algorithms (which can be heavily skewed by broad background amplitudes), orthogonal extremal selection identifies the physical sensors that exert the dominant influence over the leading principal components.
+
+\noindent
+For each principal component index $m \in \{1, \dots, k^*\}$, the corresponding physical channel $c_m^*$ is extracted by locating the maximum absolute loading coefficient within eigenvector $\mathbf{v}_m$:
+\begin{equation}
+    c_m^^* = \arg\max_{c \in \{1, \dots, C\}} \left| v_{c, m} \right| \quad \text{for } m \in \{1, \dots, k^*\}
+\end{equation}
+This extremal selection guarantees that each retained sensor represents the primary physical contributor to a distinct, orthogonal mode of spatial variance across the multivariate recording array, effectively minimizing inter-channel multicollinearity.
+
+\section{Supervised Subspace and Statistical Filtering Paradigms}
+\label{sec:supervised_paradigms}
+
+\noindent
+While unsupervised variance maximization successfully captures dominant energy structures, high-density recording environments are frequently dominated by high-amplitude background rhythms, ocular blinks, or movement artifacts. When these noise sources possess greater raw amplitude variance than task-discriminative signals (such as microvolt-level event-related potentials), unsupervised PCA selection becomes insufficient. To address this, two supervised paradigms are introduced to anchor sensor pruning directly to class separation.
+
+\subsection{Supervised Subspace PCA (Class-Conditional Manifolds)}
+\noindent
+To capture task-discriminative geometry while maintaining a foundation in linear algebra, independent PCA manifolds are fitted separately for each class partition. Given class-specific training subsets $\mathbf{X}^{(0)}$ and $\mathbf{X}^{(1)}$, independent empirical covariance matrices $\mathbf{\Sigma}^{(0)}$ and $\mathbf{\Sigma}^{(1)}$ yield distinct loading bases $\mathbf{V}^{(0)}$ and $\mathbf{V}^{(1)}$. 
+
+\noindent
+Channels are subsequently ranked by computing the principal subspace rotation divergence across the top $k^*$ components:
+\begin{equation}
+    \mathbf{S}_{\text{subspace}} = \sum_{m=1}^{k^*} \left| \mathbf{v}_m^{(0)} - \mathbf{v}_m^{(1)} \right|
+\end{equation}
+Sensors exhibiting the largest geometric divergence between class-conditional eigenspaces are prioritized, ensuring that the retained subset specifically captures axes of rotation driven by class transitions.
+
+\subsection{Supervised Temporal ANOVA Filter}
+\noindent
+As a robust univariate statistical baseline, pointwise one-way analysis of variance ($F$-statistics) evaluates class separation across the temporal domain. For a given channel $c$ and discrete timepoint $t$, scalar observations $x_{i, c, t}$ are partitioned across $K$ classes. The ratio of between-class variance ($SSB$) to within-class variance ($SSW$) is computed as:
+\begin{equation}
+    F_{c, t} = \frac{MSB_{c, t}}{MSW_{c, t}} = \frac{SSB_{c, t} / (K - 1)}{SSW_{c, t} / (N - K)}
+\end{equation}
+where between-class sum of squares $SSB_{c, t} = \sum_{k=1}^K N_k \left( \bar{x}_{k, c, t} - \bar{x}_{c, t} \right)^2$ measures class average divergence from the grand mean, and within-class sum of squares $SSW_{c, t}$ quantifies intra-trial variance. Aggregating the peak temporal $F$-scores yields a global discriminative score per channel:
+\begin{equation}
+    S_{\text{ANOVA}}(c) = \max_{t \in \{1, \dots, T\}} F_{c, t}
+\end{equation}
+This formulation is exceptionally effective for identifying localized event-related potentials (ERPs) or transient evoked responses.
+
+\section{Rigorous Statistical Validation Framework}
+\label{sec:statistical_validation}
+
+\noindent
+To evaluate whether algorithmic channel selection yields performance gains exceeding spatial coincidence, a non-parametric Monte Carlo permutation testing harness is implemented.
+
+\subsection{Empirical Null Distribution Construction}
+\noindent
+For each evaluation dataset, $R = 30$ independent iterations of uniform random channel subsampling of size $k^*$ are executed under identical downstream classification conditions (`MiniRocket` + `RidgeClassifierCV`). This generates a non-parametric empirical null accuracy distribution:
+\begin{equation}
+    \mathcal{D}_{\text{rand}} = \left\{ A_{\text{rand}}^{(1)}, A_{\text{rand}}^{(2)}, \dots, A_{\text{rand}}^{(R)} \right\}
+\end{equation}
+
+\subsection{Significance Testing and Effect Sizes}
+\noindent
+The statistical divergence between the selected subset accuracy $A_{\text{sel}}$ and the random null baseline is quantified using pseudo-count corrected empirical $p$-values:
+\begin{equation}
+    p = \frac{1 + \sum_{r=1}^R \mathbb{I}\left( A_{\text{rand}}^{(r)} \ge A_{\text{sel}} \right)}{R + 1}
+\end{equation}
+Additionally, standardized effect sizes are measured via Cohen's $d$:
+\begin{equation}
+    d = \frac{A_{\text{sel}} - \mu_{\text{rand}}}{\sigma_{\text{rand}}}
+\end{equation}
+\section{Implementation Architecture and Computational Pipeline}
+\label{sec:implementation_architecture}
+
+\noindent
+To ensure reproducibility, modularity, and scalability across high-dimensional multivariate time series datasets, the channel selection algorithms and validation harnesses were engineered within a unified Python pipeline. The system integrates data ingestion modules from the \texttt{aeon} time series repository with matrix-optimized decomposition routines from \texttt{scikit-learn} and stereographic coordinate mapping via \texttt{MNE-Python}.
+
+\subsection{Computational Complexity Analysis}
+\noindent
+A critical consideration in scaling spatial channel reduction to high-density montages (such as the 144-channel \textit{FaceDetection} array) is the computational complexity of the selection algorithms. 
 \begin{itemize}
-    \item \textbf{Dynamic Scree-Elbow Derivation ($k^*$):} Rather than fixing arbitrary retention ratios, the optimal subset size $k^*$ is derived automatically using the Kneedle/Elbow curvature algorithm on the normalized eigenvalue spectrum $(\lambda_1, \dots, \lambda_C)$.
-    \item \textbf{Orthogonal Extremal Selection (\texttt{PCA\_Max_Loading}):} For the top $k$ principal components, the physical channel $c$ that maximizes the absolute projection weight is selected:
-    \begin{equation}
-        c_m^* = \arg\max_c |v_{c, m}| \quad \text{for } m \in \{1, \dots, k\}
-    \end{equation}
+    \item \textbf{Unsupervised PCA Covariance Decomposition:} Computing the spatial covariance matrix $\mathbf{\Sigma} \in \mathbb{R}^{C \times C}$ requires $\mathcal{O}(N \cdot T \cdot C^2)$ operations, while the subsequent eigen-decomposition scales as $\mathcal{O}(C^3)$. Because sensor count $C$ is typically much smaller than temporal length $T$ or instance count $N$ ($C \ll N \cdot T$), the covariance calculation dominates, yet remains computationally trivial (executing in under 0.5 seconds for $C=144$).
+    \item \textbf{Supervised Temporal ANOVA Filtering:} Vectorized pointwise one-way ANOVA calculations across $C$ channels and $T$ timepoints scale linearly with sample size and dimensionality, requiring $\mathcal{O}(N \cdot C \cdot T)$ operations. This vectorization avoids combinatorial bottlenecks, enabling rapid evaluation across large datasets without requiring greedy wrapper loops.
 \end{itemize}
 
-\section{Supervised Subspace PCA and Temporal Filtering}
-To address high-density topologies where background global variance overshadows localized class signals, two supervised paradigms are formalized:
-\begin{enumerate}
-    \item \textbf{Supervised Subspace PCA (Class-Conditional Manifolds):} Independent PCA manifolds are fitted per class ($\mathbf{\Sigma}^{(0)}$ vs. $\mathbf{\Sigma}^{(1)}$), ranking channels by the principal subspace rotation divergence $|\mathbf{V}^{(0)} - \mathbf{V}^{(1)}|$.
-    \item \textbf{Supervised Temporal ANOVA Filter:} Computes pointwise one-way ANOVA $F$-statistics across classes at each timepoint $t$, isolating channels with high between-class variance relative to within-class noise.
-\end{enumerate}
+\subsection{Downstream Classifier Integration}
+\noindent
+Following spatial pruning, the reduced tensor $\mathbf{X}^* \in \mathbb{R}^{N \times k^* \times T}$ is passed to a standardized time series classification engine. To maintain consistency with modern time series benchmarking standards, \textit{MiniRocket} is deployed as the primary feature transformation engine. \textit{MiniRocket} applies thousands of randomly initialized convolutional kernels to capture temporal phase and shape attributes efficiently, projecting the multivariate time series into a scalable feature matrix. Classification is subsequently performed using a ridge regression classifier with built-in cross-validation (\texttt{RidgeClassifierCV}), optimizing regularization parameters across logarithmic scales.
 
-\section{Statistical Validation via Monte Carlo Permutation Testing}
-To prove that dimensionality reduction yields information retention beyond random spatial chance, a non-parametric Monte Carlo permutation test ($R = 30$ runs) generates an empirical null distribution via uniform random channel draws of size $k$. Significance is evaluated via pseudo-count corrected empirical $p$-values and Cohen's $d$ effect sizes.
+\section{Data Hygiene and Leakage Prevention Protocol}
+\label{sec:data_hygiene}
+
+\noindent
+A common methodological pitfall in automated feature and channel selection is inadvertent data leakage, where information from the test split contaminates the training or selection phase, yielding overoptimistic generalization estimates. To preserve rigorous academic validity throughout this study, a strict data hygiene protocol is enforced across all experimental iterations.
+
+\subsection{Fold Isolation and Split Independence}
+\noindent
+All parameter estimations, spatial covariance calculations, PCA loading extractions, and supervised ANOVA $F$-score rankings are computed \textbf{strictly and exclusively on the training partition} ($\mathbf{X}_{\text{train}}, \mathbf{y}_{\text{train}}$). 
+
+\noindent
+The test partition ($\mathbf{X}_{\text{test}}, \mathbf{y}_{\text{test}}$) is entirely sequestered and remains completely unseen during the channel identification phase. Once the optimal subset index mapping $\mathcal{S}^*$ is derived from training statistics, both training and test tensors are independently sliced along the spatial axis:
+\begin{equation}
+    \mathbf{X}_{\text{train}}^{*} = \mathbf{X}_{\text{train}}[:, \mathcal{S}^^*, :], \quad \mathbf{X}_{\text{test}}^{*} = \mathbf{X}_{\text{test}}[:, \mathcal{S}^^*, :]
+\end{equation}
+Downstream transformation and evaluation parameters are then fitted exclusively on $\mathbf{X}_{\text{train}}^{*}$ and evaluated on $\mathbf{X}_{\text{test}}^{*}$, ensuring that no label information, covariance structure, or temporal leakage influences the final out-of-sample accuracy metric.
