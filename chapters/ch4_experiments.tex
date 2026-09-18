@@ -50,7 +50,8 @@ Rigorous evaluation of spatial dimensionality reduction in multivariate time ser
 \label{sec:datasets}
 
 \noindent
-To evaluate the generalizability of the spatial channel selection framework across diverse recording domains, three distinct benchmark datasets were selected from the time series classification repository:
+All three benchmarks come from the UEA multivariate time-series archive
+\citep{bagnall2018uea}.To evaluate the generalizability of the spatial channel selection framework across diverse recording domains, three distinct benchmark datasets were selected from the time series classification repository:
 
 \begin{itemize}
     \item \textbf{BasicMotions ($C = 6$):} A low-dimensional motion capture dataset comprising 6 inertial sensor channels (accelerometer and gyroscope axes) recording simple physical movements. It serves as a baseline for low-complexity multi-axis temporal synchronization.
@@ -65,7 +66,9 @@ Each dataset provides distinct spatial topologies, varying from tightly coupled 
 \label{sec:data_hygiene}
 
 \noindent
-A primary methodological risk in automated channel selection is inadvertent data leakage, where information from the evaluation test split contaminates the feature selection or training phase. To ensure absolute academic validity, a strict data hygiene protocol is enforced across all experiments:
+The split design follows guidance on avoiding selection bias and leakage
+\citep{varma2006bias,cawley2010overfitting,kaufman2012leakage,
+krstajic2014crossvalidation}.A primary methodological risk in automated channel selection is inadvertent data leakage, where information from the evaluation test split contaminates the feature selection or training phase. To ensure absolute academic validity, a strict data hygiene protocol is enforced across all experiments:
 
 \begin{enumerate}
     \item \textbf{Partition Isolation:} All spatial covariance calculations, eigenvalue decompositions, PCA loading extractions, subspace rotation divergences, and ANOVA $F$-score rankings are computed \textbf{strictly and exclusively on the training partition} ($\mathbf{X}_{\text{train}}, \mathbf{y}_{\text{train}}$).
@@ -81,7 +84,9 @@ A primary methodological risk in automated channel selection is inadvertent data
 \label{sec:classifier_engine}
 
 \noindent
-To isolate the impact of spatial channel reduction from classifier-specific artifacts, a standardized, high-performance downstream classification pipeline is maintained across all evaluations utilizing established machine learning libraries (\texttt{aeon} version 0.4.x and \texttt{scikit-learn}):
+MiniRocket \citep{dempster2021minirocket} and ridge classification
+\citep{hoerl1970ridge,pedregosa2011sklearn} provide the common evaluation
+engine.To isolate the impact of spatial channel reduction from classifier-specific artifacts, a standardized, high-performance downstream classification pipeline is maintained across all evaluations utilizing established machine learning libraries (\texttt{aeon} version 0.4.x and \texttt{scikit-learn}):
 
 \begin{itemize}
     \item \textbf{Feature Transformation (\texttt{MiniRocket}):} Rather than operating directly on raw multivariate tensors or handcrafted statistical descriptors, reduced tensors ($\mathbf{X}^* \in \mathbb{R}^{N \times k^* \times T}$) are processed via \texttt{MiniRocket}. This architecture applies 10,000 randomly initialized convolutional kernels of length 9 to efficiently capture temporal phase and shape characteristics, projecting MTS data into a scalable feature matrix. A fixed random seed ($\texttt{random\_state} = 42$) is enforced across all transformer initializations.
@@ -92,7 +97,9 @@ To isolate the impact of spatial channel reduction from classifier-specific arti
 \label{sec:nested_cv}
 
 \noindent
-To determine optimal subset sizes ($k^*$) and selection methods without overfitting, a nested evaluation structure is implemented:
+Nested selection separates configuration choice from final assessment and
+limits optimistic bias
+\citep{varma2006bias,cawley2010overfitting}.To determine optimal subset sizes ($k^*$) and selection methods without overfitting, a nested evaluation structure is implemented:
 
 \begin{itemize}
     \item \textbf{Inner Cross-Validation:} Five-fold cross-validation is executed entirely within the training partition to evaluate candidate subset sizes and selection criteria. For instance, grid sweeps evaluated candidate grids such as $k \in [2, 3]$ for \textit{BasicMotions}, $k \in [3, 4, 7, 14]$ for \textit{FingerMovements}, and $k \in [15, 21, 36, 72]$ for \textit{FaceDetection}.
@@ -103,7 +110,9 @@ To determine optimal subset sizes ($k^*$) and selection methods without overfitt
 \label{sec:monte_carlo}
 
 \noindent
-To test whether algorithmic channel selection yields performance gains exceeding random spatial coincidence, a non-parametric Monte Carlo permutation testing harness is integrated:
+The empirical test and pseudo-count correction follow
+\citet{north2002permutation,phipson2010permutation}; effect sizes are
+reported following \citet{cohen1988power,lakens2013effect}.To test whether algorithmic channel selection yields performance gains exceeding random spatial coincidence, a non-parametric Monte Carlo permutation testing harness is integrated:
 
 \begin{itemize}
     \item \textbf{Empirical Null Distribution:} For each evaluation dataset, $R = 100$ independent iterations of uniform random channel subsampling of size $k^*$ are executed under identical downstream classification conditions. This generates a non-parametric empirical null accuracy distribution:

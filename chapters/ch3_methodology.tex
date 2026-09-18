@@ -30,7 +30,8 @@ The core evaluation criterion governing this process requires that $\mathbf{X}^*
 \label{sec:unsupervised_pca}
 
 \noindent
-Unsupervised dimensionality reduction relies entirely on analyzing the spatial covariance structure across the sensor array without incorporating class label information during the feature selection phase. This constraint ensures that channel ranking remains entirely unbiased toward training labels, focusing exclusively on identifying dominant energy structures within the physical system.
+The construction follows standard covariance PCA
+\citep{jolliffe2002pca,jolliffe2016pca}.Unsupervised dimensionality reduction relies entirely on analyzing the spatial covariance structure across the sensor array without incorporating class label information during the feature selection phase. This constraint ensures that channel ranking remains entirely unbiased toward training labels, focusing exclusively on identifying dominant energy structures within the physical system.
 
 \subsection{Spatial Covariance and Eigen-Decomposition}
 \noindent
@@ -48,7 +49,8 @@ where $\mathbf{\Lambda} = \text{diag}(\lambda_1, \lambda_2, \dots, \lambda_C)$ c
 
 \subsection{Dynamic Scree-Elbow Optimization ($k^*$)}
 \noindent
-A critical challenge in spatial channel reduction is determining the optimal subset size $k^*$ without relying on arbitrary retention thresholds (such as fixed percentage cuts like 25\% or 50%). Fixed thresholds frequently lead to over-compression in complex topologies or under-compression in simple domains. To overcome this, the optimal subset size $k^*$ is derived dynamically from the eigenvalue scree curve using geometric curvature analysis.
+The automated elbow heuristic is based on the Kneedle procedure
+\citep{satopaa2011kneedle}.A critical challenge in spatial channel reduction is determining the optimal subset size $k^*$ without relying on arbitrary retention thresholds (such as fixed percentage cuts like 25\% or 50%). Fixed thresholds frequently lead to over-compression in complex topologies or under-compression in simple domains. To overcome this, the optimal subset size $k^*$ is derived dynamically from the eigenvalue scree curve using geometric curvature analysis.
 
 \noindent
 The normalized eigenvalues, representing the fractional variance explained by each orthogonal component, are mapped to a normalized unit coordinate space. The Kneedle algorithm identifies the optimal elbow point $k^*$ by calculating the maximum perpendicular distance between the cumulative scree curve and the linear secant spanning from the first component coordinate to the final component coordinate:
@@ -72,7 +74,9 @@ This extremal selection guarantees that each retained sensor represents the prim
 \label{sec:supervised_paradigms}
 
 \noindent
-While unsupervised variance maximization successfully captures dominant energy structures, high-density recording environments are frequently dominated by high-amplitude background rhythms, ocular blinks, or movement artifacts. When these noise sources possess greater raw amplitude variance than task-discriminative signals (such as microvolt-level event-related potentials), unsupervised PCA selection becomes insufficient. To address this, two supervised paradigms are introduced to anchor sensor pruning directly to class separation.
+Supervised channel and spatial-filter selection has a substantial EEG/BCI
+precedent
+\citep{lal2004channel,ramoser2000csp,arvaneh2011sparsecsp}.While unsupervised variance maximization successfully captures dominant energy structures, high-density recording environments are frequently dominated by high-amplitude background rhythms, ocular blinks, or movement artifacts. When these noise sources possess greater raw amplitude variance than task-discriminative signals (such as microvolt-level event-related potentials), unsupervised PCA selection becomes insufficient. To address this, two supervised paradigms are introduced to anchor sensor pruning directly to class separation.
 
 \subsection{Supervised Subspace PCA (Class-Conditional Manifolds)}
 \noindent
@@ -87,7 +91,8 @@ Sensors exhibiting the largest geometric divergence between class-conditional ei
 
 \subsection{Supervised Temporal ANOVA Filter}
 \noindent
-As a robust univariate statistical baseline, pointwise one-way analysis of variance ($F$-statistics) evaluates class separation across the temporal domain. For a given channel $c$ and discrete timepoint $t$, scalar observations $x_{i, c, t}$ are partitioned across $K$ classes. The ratio of between-class variance ($SSB$) to within-class variance ($SSW$) is computed as:
+The filter uses the classical one-way analysis-of-variance decomposition
+\citep{fisher1925anova}.As a robust univariate statistical baseline, pointwise one-way analysis of variance ($F$-statistics) evaluates class separation across the temporal domain. For a given channel $c$ and discrete timepoint $t$, scalar observations $x_{i, c, t}$ are partitioned across $K$ classes. The ratio of between-class variance ($SSB$) to within-class variance ($SSW$) is computed as:
 \begin{equation}
     F_{c, t} = \frac{MSB_{c, t}}{MSW_{c, t}} = \frac{SSB_{c, t} / (K - 1)}{SSW_{c, t} / (N - K)}
 \end{equation}
@@ -101,7 +106,10 @@ This formulation is exceptionally effective for identifying localized event-rela
 \label{sec:statistical_validation}
 
 \noindent
-To evaluate whether algorithmic channel selection yields performance gains exceeding spatial coincidence, a non-parametric Monte Carlo permutation testing harness is implemented.
+The Monte Carlo construction and its finite-sample correction follow
+\citet{good2005permutation,north2002permutation,
+phipson2010permutation}; standardized differences follow
+\citet{cohen1988power}.To evaluate whether algorithmic channel selection yields performance gains exceeding spatial coincidence, a non-parametric Monte Carlo permutation testing harness is implemented.
 
 \subsection{Empirical Null Distribution Construction}
 \noindent
@@ -124,7 +132,12 @@ Additionally, standardized effect sizes are measured via Cohen's $d$:
 \label{sec:implementation_architecture}
 
 \noindent
-To ensure reproducibility, modularity, and scalability across high-dimensional multivariate time series datasets, the channel selection algorithms and validation harnesses were engineered within a unified Python pipeline. The system integrates data ingestion modules from the \texttt{aeon} time series repository with matrix-optimized decomposition routines from \texttt{scikit-learn} and stereographic coordinate mapping via \texttt{MNE-Python}.
+The implementation uses established scientific Python libraries:
+\texttt{NumPy} \citep{harris2020numpy},
+\texttt{pandas} \citep{mckinney2010pandas},
+\texttt{scikit-learn} \citep{pedregosa2011sklearn},
+\texttt{aeon} \citep{middlehurst2024aeon}, and
+\texttt{MNE-Python} \citep{gramfort2013mne}.To ensure reproducibility, modularity, and scalability across high-dimensional multivariate time series datasets, the channel selection algorithms and validation harnesses were engineered within a unified Python pipeline. The system integrates data ingestion modules from the \texttt{aeon} time series repository with matrix-optimized decomposition routines from \texttt{scikit-learn} and stereographic coordinate mapping via \texttt{MNE-Python}.
 
 \subsection{Computational Complexity Analysis}
 \noindent
@@ -136,13 +149,18 @@ A critical consideration in scaling spatial channel reduction to high-density mo
 
 \subsection{Downstream Classifier Integration}
 \noindent
-Following spatial pruning, the reduced tensor $\mathbf{X}^* \in \mathbb{R}^{N \times k^* \times T}$ is passed to a standardized time series classification engine. To maintain consistency with modern time series benchmarking standards, \textit{MiniRocket} is deployed as the primary feature transformation engine. \textit{MiniRocket} applies thousands of randomly initialized convolutional kernels to capture temporal phase and shape attributes efficiently, projecting the multivariate time series into a scalable feature matrix. Classification is subsequently performed using a ridge regression classifier with built-in cross-validation (\texttt{RidgeClassifierCV}), optimizing regularization parameters across logarithmic scales.
+The classifier combines MiniRocket's convolutional transform
+\citep{dempster2021minirocket} with ridge-regularised linear classification
+\citep{hoerl1970ridge}.Following spatial pruning, the reduced tensor $\mathbf{X}^* \in \mathbb{R}^{N \times k^* \times T}$ is passed to a standardized time series classification engine. To maintain consistency with modern time series benchmarking standards, \textit{MiniRocket} is deployed as the primary feature transformation engine. \textit{MiniRocket} applies thousands of randomly initialized convolutional kernels to capture temporal phase and shape attributes efficiently, projecting the multivariate time series into a scalable feature matrix. Classification is subsequently performed using a ridge regression classifier with built-in cross-validation (\texttt{RidgeClassifierCV}), optimizing regularization parameters across logarithmic scales.
 
 \section{Data Hygiene and Leakage Prevention Protocol}
 \label{sec:data_hygiene}
 
 \noindent
-A common methodological pitfall in automated feature and channel selection is inadvertent data leakage, where information from the test split contaminates the training or selection phase, yielding overoptimistic generalization estimates. To preserve rigorous academic validity throughout this study, a strict data hygiene protocol is enforced across all experimental iterations.
+Training-only estimation is essential because preprocessing and feature
+selection performed before resampling can leak information and bias evaluation
+\citep{ambroise2002selection,varma2006bias,cawley2010overfitting,
+kaufman2012leakage}.A common methodological pitfall in automated feature and channel selection is inadvertent data leakage, where information from the test split contaminates the training or selection phase, yielding overoptimistic generalization estimates. To preserve rigorous academic validity throughout this study, a strict data hygiene protocol is enforced across all experimental iterations.
 
 \subsection{Fold Isolation and Split Independence}
 \noindent

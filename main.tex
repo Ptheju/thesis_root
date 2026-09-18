@@ -8,7 +8,7 @@
   year={2026}
 ]{dissertation}
 
-%Rhian Place, Hanham road, BS15 8PH
+
 
 % Packages
 \usepackage[utf8]{inputenc}
@@ -31,17 +31,13 @@
 \usepackage{tikz}
 \usepackage{pgf}
 
-% Fallbacks for placeholders (so the project compiles before final content is added)
-\newcommand{\todo}[1]{\textbf{[TODO: #1]}}
-\newcommand{\placeholderfigure}[2]{%
-  \begin{figure}[htbp]
-    \centering
-    \fbox{\parbox{0.9\linewidth}{\textbf{Placeholder figure.}\\#1}}
-    \caption{#2}
-  \end{figure}%
-}
+% Prevent automatic blank pages inserted by \cleardoublepage (book twoside layout)
+\makeatletter
+\let\cleardoublepage\clearpage
+\makeatother
 
 \begin{document}
+
 
 % Frontmatter: Roman page numbering
 \frontmatter
@@ -53,9 +49,13 @@
 
 
 \noindent
-This dissertation investigates spatial dimensionality reduction strategies for multivariate time series (MTS) across varied domain topologies, ranging from low-dimensional motion capture sensor arrays to high-density neuroimaging and cognitive electroencephalography (EEG). As sensor technology advances, recording arrays capture rich temporal dynamics but frequently introduce severe spatial redundancy and computational overhead. To address this, this work frames sensor pruning through a dual-paradigm approach combining unsupervised principal component analysis (PCA) representation learning—utilizing orthogonal extremal loading selection ($\text{PCA\_Max\_Loading}$) and dynamic scree-elbow subset optimization ($k^*$)—with supervised temporal statistical filtering and class-conditional subspace rotation divergence. 
+This dissertation investigates spatial dimensionality reduction strategies for multivariate time series(MTS) across varied domain topologies, ranging from low-dimensional motion capture sensor arrays to high-density neuroimaging and cognitive electroencephalography (EEG). As sensor technology advances, recording arrays capture rich temporal dynamics but frequently introduce severe spatial redundancy and computational overhead. To address this, this work frames sensor pruning through a dual-paradigm approach combining unsupervised principal component analysis (PCA) representation learning utilizing orthogonal extremal loading selection ($\text{PCA\_Max\_Loading}$) and dynamic scree-elbow subset optimizatin ($k^*$) with supervised temporal statistical filtering and class-conditional subspace rotation divergence. 
 
-To ensure absolute methodological validity and eliminate data leakage, all spatial covariance calculations, eigenvalue decompositions, and subset selections are restricted strictly to inner-fold training partitions. Downstream classification performance is evaluated using scalable convolutional transformations (\texttt{MiniRocket}) and ridge classifiers (\texttt{RidgeClassifierCV}) against uncompressed full-array baselines. Furthermore, a non-parametric Monte Carlo permutation testing harness ($R = 100$) establishes empirical null distributions to quantify whether algorithmic selection exceeds spatial coincidence, using pseudo-count corrected empirical $p$-values and standardized effect sizes (Cohen's $d$).
+
+To ensure absolute methodological validity and eliminate data leakage, all spatial covariance calculations, eigenvalue decompositions, and subset selections are restrivted strictly to inner-fold training partitions. Downstream classification performance is evaluated using scalable convolutional transformations (\texttt{MiniRocket}) and ridge classifiers (\texttt{RidgeClassifierCV}) against uncompressed full-array baselines. Furthermore, a non-parametric Monte Carlo permutation testing harness ($R=100$) establishes empirical null distributions to quantify whether algorithm selection exceeds spatial coincidence, using pseud0-count corrected empirical $p$ values and standardized effect sizes (Cohen's $d$).
+
+
+
 
 The empirical findings demonstrate that aggressive spatial compression—pruning up to $75\%$ of physical sensor arrays—successfully retains or enhances classification accuracy. Specifically, on the 28-channel sensorimotor *FingerMovements* dataset, the reduced representation ($k=7$) achieved 53.00\% accuracy. On the high-density 144-channel *FaceDetection* dataset, class-conditional subspace divergence ($k=36$) achieved 64.02\% accuracy, outperforming the uncompressed full baseline ($62.77\%$) with a large standardized effect size ($d = 1.47$). However, empirical $p$-values ($p = 0.0792$) indicate that performance gains do not uniformly reach conventional significance ($\alpha = 0.05$) under finite permutation bounds. These results establish that PCA-derived subset selection provides robust sensor economy and performance retention, while highlighting the critical need for empirical null baselines when evaluating spatial feature selection in complex time series.
 
@@ -84,6 +84,7 @@ The empirical findings demonstrate that aggressive spatial compression—pruning
 
 % Backmatter: Bibliography and appendices
 \backmatter
+\bibliographystyle{plainnat}
 \bibliography{bibliography}
 
 \appendix

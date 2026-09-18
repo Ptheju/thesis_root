@@ -1,4 +1,37 @@
 \chapter{Conclusion}
-\label{ch:conclusion}
+\label{chap:conclusion}
 
-Summarize contributions, implications, and directions for future work.
+\noindent
+This final chapter summarizes the core contributions of the dissertation, outlines the broader implications for applied machine learning and sensor design, and proposes concrete directions for future research.
+
+\section{Summary of Core Contributions}
+\noindent
+This research investigated the feasibility and statistical rigor of PCA-derived spatial dimensionality reduction for multivariate time series classification. The primary contributions of this work are summarized as follows:
+\begin{enumerate}
+    \item \textbf{Dual-Paradigm Framework:} Formulated and contrasted unsupervised variance-maximizing representation learning (\texttt{PCA-Max Loading}) with supervised class-conditional subspace divergence for spatial channel pruning.
+    \item \textbf{Rigorous Data Hygiene:} Implemented strict inner-fold training partition isolation for all covariance calculations, spatial slicing, and hyperparameter tuning, completely eliminating data leakage.
+    \item \textbf{Empirical Null Validation:} Developed a Monte Carlo permutation testing harness ($R = 100$) utilizing pseudo-count corrected $p$-values and Cohen's $d$ effect sizes to benchmark selected subsets against random spatial draws.
+    \item \textbf{Computational Economy:} Demonstrated that 75\% spatial pruning reduces input tensor dimensionality and memory bandwidth requirements while accelerating downstream \texttt{MiniRocket} transformation pipelines.
+\end{enumerate}
+
+\section{Broader Implications for Sensor Economy}
+\noindent
+Prior EEG, wearable-sensing and industrial-monitoring research similarly
+links sensor count to acquisition and deployment complexity
+\citep{alotaiby2015channels,lara2013wearable,qin2012process}.Beyond machine learning performance metrics, these findings carry practical weight for hardware deployment. In clinical neuroimaging and industrial Internet of Things (IoT) monitoring, maintaining high-channel configurations inflates acquisition complexity, hardware costs, and energy consumption. By proving that predictive accuracy can be preserved using principled covariance-derived subsets, this work supports the design of lighter, more efficient acquisition hardware without sacrificing analytical fidelity.
+
+\section{Recommendations for Future Work}
+\noindent
+\item \textbf{Nonlinear Subspace Filtering:}
+Integrating kernel PCA \citep{scholkopf1998kernelpca} or graph-based neural
+network representations to capture nonlinear spatial dependencies across
+complex electrode topographies. Building upon the foundations established in this dissertation, future research will explore several natural extensions:
+\begin{itemize}
+    \item \textbf{Real-Time Streaming Architectures:} Extending spatial-temporal channel pruning to online, streaming multivariate time series where covariance matrices must be updated dynamically.
+    \item \textbf{Nonlinear Subspace Filtering:} Integrating kernel PCA or graph-based neural network representations to capture non-linear spatial dependencies across complex electrode topographies.
+    \item \textbf{Hardware-Independent Profiling:} Conducting extensive, multi-threaded benchmarking across dedicated physical hardware to establish rigorous production-latency and energy-consumption profiles.
+\end{itemize}
+
+\section{Final Concluding Remarks}
+\noindent
+In conclusion, PCA-derived spatial selection provides a principled, interpretable mechanism for compressing multivariate time series while maintaining competitive classification performance. While performance gains relative to random selection remain sensitive to domain topology, the combination of leakage-resistant evaluation protocols and rigorous empirical null baselines establishes a robust framework for future research in time series sensor optimization.

@@ -2,15 +2,22 @@
 \label{chap:background}
 
 \section{Multivariate time-series representations}
-An observation $X_i\in\mathbb{R}^{C\times T}$ contains temporal dependence within each channel and cross-channel dependence at each time point. Dimensionality reduction can target time points, engineered features, latent components or physical channels. These targets are not interchangeable. Flattening $X_i$ into a vector can make standard tabular methods convenient, but it may obscure the distinction between temporal and spatial structure.
+Multivariate classification benchmarks formalise the simultaneous temporal
+and cross-variable structure of these data
+\citep{bagnall2017bakeoff,ruiz2021multivariate}.An observation $X_i\in\mathbb{R}^{C\times T}$ contains temporal dependence within each channel and cross-channel dependence at each time point. Dimensionality reduction can target time points, engineered features, latent components or physical channels. These targets are not interchangeable. Flattening $X_i$ into a vector can make standard tabular methods convenient, but it may obscure the distinction between temporal and spatial structure.
 
 \section{Feature extraction and channel selection}
-Feature extraction maps observations to new variables, for example by transforming raw sequences into statistical descriptors or latent components. Channel selection instead retains an interpretable subset of the original sensors. The latter preserves the time axis and may reduce acquisition requirements, although it cannot combine weak signals spread across omitted channels.
+Feature extraction and feature selection are distinct reduction families
+\citep{guyon2003feature,chandrashekar2014feature,kohavi1997wrappers,
+peng2005mrmr}; \texttt{catch22} is a canonical compact descriptor set for
+time series \citep{lubba2019catch22}.Feature extraction maps observations to new variables, for example by transforming raw sequences into statistical descriptors or latent components. Channel selection instead retains an interpretable subset of the original sensors. The latter preserves the time axis and may reduce acquisition requirements, although it cannot combine weak signals spread across omitted channels.
 
 An early project stream extracted 22 catch22 descriptors per channel. For 62 channels this produced 1,364 features, of which 929 PCA components were required to retain 95.02\% cumulative variance. A Random Forest classifier achieved approximately 50.48\% accuracy. This exploratory result motivated the shift from global feature-space compression toward spatial channel selection. It should not be interpreted as proof that all feature-based PCA fails; it is evidence about the tested representation and pipeline.
 
 \section{Principal component analysis}
-For centred observations $X\in\mathbb{R}^{n\times C}$, the sample covariance matrix is
+PCA originates in the work of \citet{pearson1901pca} and
+\citet{hotelling1933pca}; modern treatments are given by
+\citet{jolliffe2002pca,jolliffe2016pca}.For centred observations $X\in\mathbb{R}^{n\times C}$, the sample covariance matrix is
 \begin{equation}
  \Sigma=\frac{1}{n-1}X^\top X.
 \end{equation}
@@ -32,10 +39,14 @@ PCA is unsupervised: it has no knowledge of the response variable unless labels 
 Loadings can support multiple definitions of channel importance. A channel may dominate an individual component, make a large eigenvalue-weighted contribution across components, have a large projection norm in the leading subspace, or contribute to differences between class-specific subspaces. The first three criteria are unsupervised after preprocessing. The last is supervised because it requires class labels.
 
 \section{Time-series classification as an evaluation task}
-Classification provides an operational test of whether a reduced representation retains task-relevant information. The classifier is therefore an evaluation instrument rather than the principal contribution. All time-series classification experiments were performed using the \texttt{aeon} machine learning library (version 0.4.x). Feature extraction relied on \textit{MiniRocket} \cite{dempster2021minirocket}, which applies a fixed set of 10,000 randomly initialized convolutional kernels of length 9 to capture temporal phase, shape, and spike characteristics efficiently. The resulting feature representations were classified using a ridge regression classifier with built-in generalized cross-validation (\texttt{RidgeClassifierCV} from \textit{scikit-learn}), optimizing regularisation parameters across a logarithmic grid ($\alpha \in [10^{-3}, 10^3]$) with default random seed initialization (\texttt{random\_state = 42}) to ensure full reproducibility across experimental runs.
+Modern TSC evaluations emphasise broad, reproducible comparison across
+datasets \citep{bagnall2017bakeoff,middlehurst2024bakeoff}, and the
+\texttt{aeon} toolkit provides the implementation framework used here
+\citep{middlehurst2024aeon}.Classification provides an operational test of whether a reduced representation retains task-relevant information. The classifier is therefore an evaluation instrument rather than the principal contribution. All time-series classification experiments were performed using the \texttt{aeon} machine learning library (version 0.4.x). Feature extraction relied on \textit{MiniRocket} \cite{dempster2021minirocket}, which applies a fixed set of 10,000 randomly initialized convolutional kernels of length 9 to capture temporal phase, shape, and spike characteristics efficiently. The resulting feature representations were classified using a ridge regression classifier with built-in generalized cross-validation (\texttt{RidgeClassifierCV}\citep{hoerl1970ridge,pedregosa2011sklearn} from \textit{scikit-learn}), optimizing regularisation parameters across a logarithmic grid ($\alpha \in [10^{-3}, 10^3]$) with default random seed initialization (\texttt{random\_state = 42}) to ensure full reproducibility across experimental runs.
 
 \section{Evaluation against random subsets}
-Comparing reduced performance only with the full array can show compression with limited performance loss, but it cannot establish that the selection rule identifies unusually informative channels. Random subsets of equal cardinality provide a more relevant null reference. If $A_{\mathrm{sel}}$ is selected-subset accuracy and $A_r$ is accuracy from random draw $r$, a one-tailed pseudo-count corrected empirical $p$-value is
+Comparing reduced performance only with the full array can show compression with limited performance loss, but it cannot establish that the selection rule identifies unusually informative channels. Random subsets of equal cardinality provide a more relevant null reference. RidgeClassifierCV \citep{hoerl1970ridge,pedregosa2011sklearn}If $A_{\mathrm{sel}}$ is selected-subset accuracy and $A_r$ is accuracy from random draw $r$, a one-tailed pseudo-count corrected empirical $p$-value is
+
 \begin{equation}
  p=\frac{1+\sum_{r=1}^{R}\mathbb{I}(A_r\ge A_{\mathrm{sel}})}{R+1}.
 \end{equation}
@@ -66,7 +77,11 @@ Abadallah et al. (2023) & Multivariate time series & Time-series clustering & Fo
 
 \section{Exploratory data analysis and spatial structure}
 \label{sec:eda}
-The three benchmarks span markedly different spatial dimensionalities. BasicMotions contains six motion channels, FingerMovements contains 28 EEG channels, and FaceDetection contains 144 dimensions. This progression is useful because it exposes different forms of redundancy. With only six variables, BasicMotions offers little room for aggressive pruning and its classification ceiling masks differences between subsets. In contrast, the two EEG datasets contain denser arrays in which correlated channels may encode overlapping activity.
+The benchmark datasets are distributed through the UEA multivariate archive
+\citep{bagnall2018uea}; the companion UCR archive provides the broader
+univariate benchmarking context \citep{dau2019ucr}.The three benchmarks span markedly different spatial dimensionalities. BasicMotions contains six motion channels, FingerMovements contains 28 EEG channels, and FaceDetection contains 144 dimensions. This progression is useful because it exposes different forms of redundancy. With only six variables, BasicMotions offers little room for aggressive pruning and its classification ceiling masks differences between subsets. In contrast, the two EEG datasets contain denser arrays in which correlated channels may encode overlapping activity.EEG channel dependence is shaped by volume conduction and spatial mixing
+\citep{nunez2006eeg,blankertz2008bci}, unlike the distinct physical axes
+typical of inertial sensing \citep{bulling2014activity}.
 
 \begin{table}[htbp]
 \centering
@@ -149,7 +164,9 @@ Physical topology affects how channel redundancy should be interpreted. Adjacent
 \end{figure}
 
 \subsection{Temporal dynamics and variance spectra}
-The spatial matrix contains $N\cdot T$ rows, so its covariance aggregates channel co-variation across trials and time. A scree curve plots ordered eigenvalues $\lambda_1\ge\cdots\ge\lambda_C$, while a cumulative curve plots $\operatorname{CEV}_k$. A sharp elbow suggests that a small subspace accounts for much of the observed spatial variance. It does not establish that the same subspace preserves class information. This distinction motivates evaluating several $k$ values and measuring downstream classification rather than treating an explained-variance threshold as the final criterion.
+The spatial matrix contains $N\cdot T$ rows, so its covariance aggregates channel co-variation across trials and time. Scree plots are a standard PCA diagnostic \citep{jolliffe2002pca}, while
+automated knee detection provides a reproducible heuristic for locating an
+elbow \citep{satopaa2011kneedle}.A scree curve plots ordered eigenvalues $\lambda_1\ge\cdots\ge\lambda_C$, while a cumulative curve plots $\operatorname{CEV}_k$. A sharp elbow suggests that a small subspace accounts for much of the observed spatial variance. It does not establish that the same subspace preserves class information. This distinction motivates evaluating several $k$ values and measuring downstream classification rather than treating an explained-variance threshold as the final criterion.
 
 \begin{figure}[htbp]
   \centering
@@ -177,4 +194,6 @@ The spatial matrix contains $N\cdot T$ rows, so its covariance aggregates channe
 The supplied diagnostic plots identify $k^*=3$, $k^*=7$ and $k^*=27$ for BasicMotions, FingerMovements and FaceDetection respectively. These values are descriptive outputs of the plotted elbow calculation. In particular, the FaceDetection value $k^*=27$ differs from the earlier experimental candidate grid $\{15,21,36,72\}$ and from the final inner-CV choice $k=36$. The plot must therefore not be presented as the source of the final $k=36$ decision. Instead, it shows that a variance-based elbow and a task-selected cardinality answer different questions: the former describes covariance compression, whereas the latter maximises validation performance among the configurations actually evaluated.
 
 \subsection{Domain interpretation and safeguards}
-FingerMovements and FaceDetection can be discussed in relation to sensorimotor and visual-event EEG only after verifying dataset documentation, electrode ordering and acquisition conditions. A numerical channel index is not itself an anatomical label. Similarly, selected channels do not establish a neural generator or causal mechanism. Domain interpretation should therefore be framed as consistency with known phenomena, supported by an authoritative mapping and literature, rather than as biological validation of the selection rule.
+Physiological interpretation requires verified montage metadata and should
+remain consistent with established ERP and motor-imagery evidence
+\citep{luck2014erp,ramoser2000csp,lotte2018bci}.FingerMovements and FaceDetection can be discussed in relation to sensorimotor and visual-event EEG only after verifying dataset documentation, electrode ordering and acquisition conditions. A numerical channel index is not itself an anatomical label. Similarly, selected channels do not establish a neural generator or causal mechanism. Domain interpretation should therefore be framed as consistency with known phenomena, supported by an authoritative mapping and literature, rather than as biological validation of the selection rule.

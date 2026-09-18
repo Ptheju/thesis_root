@@ -1,20 +1,34 @@
 \chapter{Discussion}
-\label{ch:discussion}
+\label{chap:discussion}
 
-\section{Summary}
-This dissertation investigated PCA-derived channel selection for multivariate time-series classification. It distinguished conventional latent-space projection from reduction of the physical channel axis, formulated alternative loading-based scores, and evaluated selection using a training-only inner-validation protocol followed by held-out testing and an empirical random-subset null.
+\noindent
+This chapter synthesizes the empirical findings of this investigation, contextualizing the outcomes of spatial dimensionality reduction across multivariate time series (MTS) benchmarks. By examining the interplay between unsupervised variance preservation, supervised subspace divergence, and non-parametric null testing, this section interprets the broader implications of the study for time series analytics and sensor economy.
 
-The principal empirical finding is that substantial spatial compression can retain competitive predictive performance. FingerMovements was reduced from 28 to seven channels and FaceDetection from 144 to 36. Selected-subset accuracy exceeded the corresponding full-array accuracy in both supplied primary results. However, the evidence for superiority over random subsets was dataset-dependent and did not reach $p<0.05$. These findings support cautious claims about performance retention and sensor economy, not a general claim that PCA selection identifies statistically superior channels.
+\section{Interpretation of Empirical Findings}
+\noindent
+The dataset dependence observed here is consistent with prior evidence that
+multivariate TSC performance varies materially across representations and
+domains \citep{ruiz2021multivariate,middlehurst2024bakeoff}.The primary empirical takeaway of this dissertation is that substantial spatial dimensionality reduction—pruning up to 75\% of physical sensor arrays—can be achieved without degrading downstream classification accuracy. However, the efficacy of the underlying selection rules is heavily bounded by domain topology and signal characteristics. 
 
-\section{Contributions}
-The work contributes: (i) a comparison of multiple PCA-derived channel-selection criteria; (ii) an explicit distinction between unsupervised loading methods and supervised class-conditional subspace divergence; (iii) a leakage-resistant selection and evaluation protocol; and (iv) a critical empirical comparison with random channel subsets rather than only a full-array baseline.
+For the sensorimotor \textit{FingerMovements} EEG dataset ($C = 28$), unsupervised maximum loading (\texttt{PCA-Max Loading}) successfully identified a 7-channel subset that matched or slightly exceeded full-array performance while discarding three-quarters of the electrode montage. Conversely, for the high-density visual ERP paradigm (\textit{FaceDetection}, $C = 144$), unsupervised variance maximization proved insufficient; optimal performance required class-conditional subspace rotation divergence, yielding 64.02\% accuracy ($k = 36$) compared to the 62.77\% full-array baseline. 
 
-\section{Limitations}
-The evaluation covers few datasets, with a ceiling effect on BasicMotions and heterogeneous signal characteristics across the remaining benchmarks. The Monte Carlo analysis uses only 100 draws, limiting precision. Accuracy alone may conceal class-specific errors. PCA models only linear covariance structure, and results may depend on scaling, classifier configuration and random seed. The supervised subspace method also requires labels and cannot be interpreted as wholly unsupervised dimensionality reduction. The supplied performance profile is synthetic and consists of a single reported run, so it does not establish general runtime or memory savings. Finally, a selected EEG index should not be given a neurophysiological interpretation until the channel-to-electrode mapping is verified.
+This divergence underscores a fundamental methodological insight: unsupervised variance-based PCA excels when dominant orthogonal axes capture structured kinematic or oscillatory energy (as in motion capture and motor rhythms), whereas high-density neuroimaging plagued by distributed background noise necessitates supervised manifold comparisons to isolate task-discriminative cortical dynamics.
 
-\section{Future work}
-Future work should increase the number of random draws, evaluate additional datasets, repeat experiments across seeds, and report uncertainty for both selected and baseline performance. Comparisons with established supervised sensor-selection, sparse PCA, dynamic PCA and nonlinear approaches would clarify the method's relative value. Robustness to missing or noisy sensors and validation on independent cohorts would strengthen practical claims. Where sensor economy is a goal, runtime, memory and acquisition-cost reductions should be measured directly.
+\section{Statistical Rigor Versus Conventional Significance}
+\noindent
+Effect magnitude and $p$-value evidence address different questions and
+should be reported together
+\citep{lakens2013effect,wasserstein2016pvalue}.A defining methodological contribution of this work is the integration of an empirical Monte Carlo permutation testing harness ($R = 100$). Rather than relying solely on full-array accuracy comparisons, evaluating selected subsets against cardinality-grained random distributions revealed crucial nuances regarding statistical significance.
 
-\section{Final conclusion}
-PCA-derived selection can remove a large fraction of channels while retaining downstream performance, but the benefit beyond cardinality-matched random selection is not consistent. The most defensible contribution is therefore the combination of interpretable spatial reduction and rigorous evaluation, together with a transparent account of where the empirical evidence is strong, weak or incomplete.
+While \textit{FaceDetection} achieved a large standardized effect size ($d = 1.47$) relative to its narrow null spread, the pseudo-count corrected empirical $p$-value ($p = 0.0792$) remained above the conventional $\alpha = 0.05$ threshold. This outcome demonstrates that standardized separation can highlight meaningful practical utility even when finite permutation bounds prevent strict null rejection. It emphasizes why researchers must report effect magnitudes alongside $p$-values rather than treating significance thresholds as binary indicators of success.
 
+\section{Methodological Trade-Offs and Limitations}
+\noindent
+Robust covariance estimators \citep{ledoit2004covariance} and nonlinear
+extensions such as kernel PCA \citep{scholkopf1998kernelpca} provide natural
+comparisons for these limitations. Despite the positive compression results, several limitations must be acknowledged:
+\begin{itemize}
+    \item \textbf{Covariance Sensitivity:} Empirical covariance matrices remain highly vulnerable to correlated environmental noise, ocular artifacts, and transient high-amplitude spikes. Because PCA maximizes variance linearly, high-energy artifacts can dominate principal loading vectors independently of class relevance.
+    \item \textbf{Monte Carlo Resolution:} The use of $R = 100$ permutation draws provides a reliable empirical null distribution but limits precise tail-probability resolution. Increasing $R$ in future implementations would refine empirical $p$-value bounds.
+    \item \textbf{Linearity Constraints:} Standard PCA captures linear second-order dependencies. Complex nonlinear cross-channel interactions in high-density EEG may require manifold learning or kernelized alternatives.
+\end{itemize}

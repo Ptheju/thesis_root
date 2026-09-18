@@ -12,13 +12,22 @@ Multivariate time series are collected whenever several variables are observed r
 \end{equation}
 where $N$ denotes the number of observations or trials, $C$ the number of channels, and $T$ the number of time points. Unlike an ordinary tabular dataset, this representation contains at least two forms of dependence: temporal dependence within each channel and cross-channel dependence among variables observed over the same interval.
 
-Advances in sensing technology have made it possible to record larger numbers of channels at higher sampling frequencies. Dense measurements can capture subtle spatial and temporal behaviour that would be unavailable from a smaller array. However, the resulting representation is not necessarily efficient. Neighbouring or functionally related sensors may contain strongly correlated information, while noisy channels can increase computational cost without improving prediction. The usefulness of additional channels therefore depends not only on the volume of information recorded, but also on whether that information is distinct and relevant to the downstream task.
+Advances in sensing technology have made it possible to record larger numbers of channels at higher sampling frequencies. Dense measurements can capture subtle spatial and temporal behaviour that would be unavailable from a smaller array. However, the resulting representation is not necessarily efficient. Neighbouring or functionally related sensors may contain strongly correlated information, while noisy channels can increase computational cost without improving prediction. The usefulness of additional channels therefore depends not only on the volume of information recorded, but also on whether that information is distinct and relevant to the downstream task. The multivariate time-series setting and its applications are established
+across time-series classification, EEG, wearable sensing and industrial
+monitoring research
+\citep{bagnall2017bakeoff,ruiz2021multivariate,nunez2006eeg,
+bulling2014activity,qin2012process}.
 
 % Add foundational citations on multivariate time-series analysis and sensor redundancy.
 
 \subsection{The need for dimensionality reduction}
 
-High-dimensional multivariate time series create difficulties throughout the analytical pipeline. Storage and memory requirements increase with $NCT$, feature transformation becomes more expensive, and predictive models may become sensitive to redundant or noisy inputs. These issues are particularly important for high-density EEG and resource-constrained monitoring systems, where acquisition time, hardware complexity and computational latency can influence whether a method is practically deployable.
+The statistical and computational motivations for feature reduction, and
+the distinction between extracted components and selected original variables,
+are reviewed by
+\citet{jolliffe2002pca,jolliffe2016pca,guyon2003feature,
+chandrashekar2014feature}.High-dimensional multivariate time series create difficulties throughout the analytical pipeline. Storage and memory requirements increase with $NCT$, feature transformation becomes more expensive, and predictive models may become sensitive to redundant or noisy inputs. These issues are particularly important for high-density EEG and resource-constrained monitoring systems, where acquisition time, hardware complexity and computational latency can influence whether a method is practically deployable.
+
 
 Dimensionality reduction seeks a more compact representation of the observations. Conventional feature-extraction methods replace the original variables with a smaller set of latent variables,
 \begin{equation}
@@ -38,7 +47,12 @@ where $S$ is the selected set of physical channels. The temporal sequence of eve
 
 \subsection{Applications of channel reduction}
 
-Channel reduction is relevant wherever redundant sensing increases operational cost. In EEG, fewer electrodes can reduce preparation time, memory requirements and the amount of data passed to a classifier. In wearable and embedded systems, smaller input arrays may reduce communication and energy demands. In industrial monitoring, identifying a compact set of informative sensors may simplify maintenance and facilitate deployment on constrained devices. Motion-recognition systems can similarly benefit when a reduced combination of accelerometer or gyroscope axes retains the information required for classification.
+Channel selection has been studied directly in EEG and BCI systems
+\citep{alotaiby2015channels,lal2004channel,arvaneh2011sparsecsp},
+while related acquisition and deployment pressures arise in wearable sensing
+and industrial monitoring
+\citep{lara2013wearable,bulling2014activity,
+venkatasubramanian2003fault}.Channel reduction is relevant wherever redundant sensing increases operational cost. In EEG, fewer electrodes can reduce preparation time, memory requirements and the amount of data passed to a classifier. In wearable and embedded systems, smaller input arrays may reduce communication and energy demands. In industrial monitoring, identifying a compact set of informative sensors may simplify maintenance and facilitate deployment on constrained devices. Motion-recognition systems can similarly benefit when a reduced combination of accelerometer or gyroscope axes retains the information required for classification.
 
 These benefits cannot be assumed from dimensionality reduction alone. A smaller representation is useful only if it preserves information relevant to its intended application. Accordingly, this dissertation evaluates reduced channel sets through downstream time-series classification. The classifier is used as an evaluation instrument: it tests whether task-relevant temporal information remains after spatial reduction, rather than constituting the principal methodological contribution.
 
@@ -52,7 +66,9 @@ The main challenges encountered in this investigation arise from the structure o
 
 A common way to apply conventional dimensionality-reduction algorithms is to flatten a multichannel sequence into a long vector. Although convenient, flattening can obscure the distinction between a channel and a time point. Temporal ordering, phase relationships and local transient patterns may then be treated as ordinary independent features. This is problematic when class information is carried by the shape or timing of a response rather than by its global magnitude.
 
-An exploratory feature-space experiment in this project demonstrated this limitation. Channel-wise catch22 extraction produced 1,364 features, of which 929 PCA components were required to retain approximately 95\% cumulative variance. Despite preserving most of the measured variance, downstream classification remained close to chance. This result does not imply that PCA or feature extraction is universally unsuitable; it shows that variance retention in the tested representation did not guarantee retention of class-discriminative temporal information. The finding motivated a shift towards reducing the channel dimension while leaving the temporal sequences intact.
+An exploratory feature-space experiment in this project demonstrated this limitation. Channel-wise catch22 extraction produced 1,364 features, of which 929 PCA components were required to retain approximately 95\% cumulative variance. Despite preserving most of the measured variance, downstream classification remained close to chance. This result does not imply that PCA or feature extraction is universally unsuitable; it shows that variance retention in the tested representation did not guarantee retention of class-discriminative temporal information. The finding motivated a shift towards reducing the channel dimension while leaving the temporal sequences intact.This limitation follows from PCA's variance-maximising objective rather
+than any class-separation criterion
+\citep{pearson1901pca,hotelling1933pca,jackson1991pca}.
 
 \subsection{Variance is not equivalent to discriminative information}
 
@@ -68,13 +84,19 @@ Consequently, a method that performs well on one dataset may not transfer direct
 
 \subsection{Selection bias and data leakage}
 
-Evaluating many methods and values of $k$ on the held-out test set and then reporting the best result would produce an optimistically biased estimate. The test set would indirectly influence the selected configuration, even if it were never used to fit PCA or the classifier. This risk is especially important when the experimental grid contains several selection rules and sparsity levels.
+Selection outside the training folds can produce substantial optimistic bias
+\citep{ambroise2002selection,varma2006bias,cawley2010overfitting,
+kaufman2012leakage,krstajic2014crossvalidation}.Evaluating many methods and values of $k$ on the held-out test set and then reporting the best result would produce an optimistically biased estimate. The test set would indirectly influence the selected configuration, even if it were never used to fit PCA or the classifier. This risk is especially important when the experimental grid contains several selection rules and sparsity levels.
 
 To address this problem, the final protocol selects the PCA method and channel count through five-fold inner cross-validation using the training partition only. Scaling, covariance estimation, PCA fitting, channel scoring and classifier training are repeated inside the validation procedure. The chosen configuration is then refitted on the available training data and evaluated once on the sequestered test set. This separation ensures that the final test result evaluates a predetermined pipeline rather than a configuration chosen retrospectively for favourable test performance.
 
 \subsection{Establishing whether selection is better than chance}
 
-Comparison with the full array can show whether performance is retained after reduction, but it does not show whether the selected channels are unusually informative. A method may match the full-array accuracy simply because many channel subsets perform similarly. For this reason, the selected representation is also compared with an empirical distribution generated from uniformly sampled random channel subsets of the same size.
+Comparison with the full array can show whether performance is retained after reduction, but it does not show whether the selected channels are unusually informative. A method may match the full-array accuracy simply because many channel subsets perform similarly. For this reason, the selected representation is also compared with an empirical distribution generated from uniformly sampled random channel subsets of the same size.Monte Carlo tests require finite-sample-aware empirical probabilities, and
+effect sizes should be interpreted separately from thresholded significance
+decisions
+\citep{north2002permutation,phipson2010permutation,good2005permutation,
+cohen1988power,lakens2013effect,wasserstein2016pvalue}.
 
 The random-subset analysis reports the selected-minus-null gain, a standardised effect size and a pseudo-count-corrected empirical $p$-value. These quantities are interpreted jointly. A positive accuracy difference or large standardised effect does not by itself establish statistical significance, and $p>0.05$ is not described as evidence that the null hypothesis has been rejected. This cautious interpretation is important because the final FaceDetection result is directionally favourable but remains above the conventional significance threshold, while the FingerMovements result provides much weaker evidence against random selection.
 
