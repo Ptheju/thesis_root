@@ -137,7 +137,9 @@ The implementation uses established scientific Python libraries:
 \texttt{pandas} \citep{mckinney2010pandas},
 \texttt{scikit-learn} \citep{pedregosa2011sklearn},
 \texttt{aeon} \citep{middlehurst2024aeon}, and
-\texttt{MNE-Python} \citep{gramfort2013mne}.To ensure reproducibility, modularity, and scalability across high-dimensional multivariate time series datasets, the channel selection algorithms and validation harnesses were engineered within a unified Python pipeline. The system integrates data ingestion modules from the \texttt{aeon} time series repository with matrix-optimized decomposition routines from \texttt{scikit-learn} and stereographic coordinate mapping via \texttt{MNE-Python}.
+\texttt{MNE-Python} \citep{gramfort2013mne}.To ensure reproducibility, modularity, and scalability across high-dimensional multivariate time series datasets, the channel selection algorithms and validation harnesses were engineered within a unified Python pipeline. The system integrates data ingestion modules from the \texttt{aeon} time series repository with matrix-optimized decomposition routines from \texttt{scikit-learn} and stereographic coordinate mapping via \texttt{MNE-Python}.The complete implementation, experiment configurations, and supporting
+scripts are available in the project repository:
+\url{https://github.com/Ptheju/DRMTS}.
 
 \subsection{Computational Complexity Analysis}
 \noindent
