@@ -3,9 +3,12 @@
 
 This chapter establishes the context and motivation for investigating dimensionality reduction in multivariate time series. It first explains why increasingly dense sensor arrays create both analytical opportunities and practical difficulties. The principal challenges addressed by this project are then introduced, including the preservation of temporal structure, the distinction between variance and discriminative information, and the need to evaluate channel-selection methods without test-set leakage. Finally, the investigative focus, research questions, objectives and structure of the dissertation are presented.
 
+
 \section{Motivation}
 
 Multivariate time series are collected whenever several variables are observed repeatedly over time. Typical examples include electroencephalography (EEG), motion capture, industrial monitoring, wearable sensing, finance and environmental surveillance. A dataset of this kind can be represented as
+
+
 \begin{equation}
     \mathcal{X}\in\mathbb{R}^{N\times C\times T},
     \label{eq:mts-tensor-intro}
